@@ -14,7 +14,7 @@ name: Auto-update from upstream
 
 on:
   schedule:
-    - cron: "18 * * * *"
+    - cron: "17 * * * *"
   workflow_dispatch:
     inputs:
       refresh_schedule:
