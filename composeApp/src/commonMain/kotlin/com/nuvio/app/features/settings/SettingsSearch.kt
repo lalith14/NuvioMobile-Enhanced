@@ -130,7 +130,6 @@ internal fun settingsSearchEntries(
     val collectionsPage = stringResource(Res.string.collections_header)
     val tmdbPage = stringResource(Res.string.compose_settings_page_tmdb_enrichment)
     val mdbListPage = stringResource(Res.string.compose_settings_page_mdblist_ratings)
-    val omdbPage = stringResource(Res.string.compose_settings_page_omdb)
 
     val categories = SettingsCategory.entries.associateWith { stringResource(it.labelRes) }
     val pageTitles = SettingsPage.entries.associateWith { stringResource(it.titleRes) }
@@ -973,12 +972,7 @@ internal fun settingsSearchEntries(
         title = mdbListPage,
         description = stringResource(Res.string.settings_integrations_mdblist_description),
     )
-    addPage(
-        page = SettingsPage.Omdb,
-        key = "omdb",
-        title = omdbPage,
-        description = stringResource(Res.string.settings_integrations_omdb_description),
-    )
+    // OMDb hidden in this fork (IMDb ratings need no key).
     val tmdbModulesSection = stringResource(Res.string.settings_tmdb_section_modules)
     listOf(
         PlaybackSearchRow("tmdb-enable", stringResource(Res.string.settings_tmdb_enable_enrichment), stringResource(Res.string.settings_tmdb_enable_enrichment_description), stringResource(Res.string.settings_tmdb_section_title)),
@@ -1028,18 +1022,6 @@ internal fun settingsSearchEntries(
         )
     }
 
-    listOf(
-        PlaybackSearchRow("omdb-api-key", stringResource(Res.string.settings_omdb_personal_api_key), stringResource(Res.string.settings_omdb_enter_api_key), stringResource(Res.string.settings_omdb_section_title)),
-    ).forEach { row ->
-        addRow(
-            page = SettingsPage.Omdb,
-            key = row.key,
-            title = row.title,
-            description = row.description,
-            pageLabel = omdbPage,
-            section = row.sectionOverride ?: stringResource(Res.string.settings_omdb_section_title),
-        )
-    }
 
     val notificationsAlerts = stringResource(Res.string.settings_notifications_section_alerts)
     addRow(
