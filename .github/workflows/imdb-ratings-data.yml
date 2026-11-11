@@ -4,7 +4,7 @@ name: IMDb episode ratings data
 # keep only TV episode ratings, split them into 1000 small files and publish them on this
 # repository's GitHub Pages site. The app reads the one file for the show you open:
 # https://<owner>.github.io/<repo>/imdb-ratings/v1/<IMDb number mod 1000>.json
-# Uses AUTO_UPDATE_TOKEN only to switch GitHub Pages on (source: GitHub Actions) the first time.
+# Needs GitHub Pages switched on once: Settings > Pages > Source: GitHub Actions.
 
 on:
   schedule:
@@ -13,6 +13,7 @@ on:
 
 permissions:
   contents: read
+  pages: read
 
 concurrency:
   group: imdb-ratings-pages
@@ -23,18 +24,14 @@ jobs:
     name: Build the ratings files
     runs-on: ubuntu-latest
     steps:
-      - name: Make sure GitHub Pages is on
+      - name: Check that GitHub Pages is on
         env:
-          GH_TOKEN: ${{ secrets.AUTO_UPDATE_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          if build_type="$(gh api "repos/${GITHUB_REPOSITORY}/pages" --jq .build_type 2>/dev/null)"; then
-            if [[ "${build_type}" != "workflow" ]]; then
-              gh api -X PUT "repos/${GITHUB_REPOSITORY}/pages" -f build_type=workflow
-            fi
-          else
-            gh api -X POST "repos/${GITHUB_REPOSITORY}/pages" -f build_type=workflow
+          if ! build_type="$(gh api "repos/${GITHUB_REPOSITORY}/pages" --jq .build_type 2>/dev/null)" || [[ "${build_type}" != "workflow" ]]; then
+            echo "::error::Turn on GitHub Pages: Settings > Pages > Build and deployment > Source: GitHub Actions."
+            exit 1
           fi
-          echo "Pages: $(gh api "repos/${GITHUB_REPOSITORY}/pages" --jq '.html_url + " (" + .build_type + ")"')"
 
       - uses: actions/checkout@v6
         with:
