@@ -1,0 +1,75 @@
+name: IMDb episode ratings data
+
+# Once a day: download IMDb's free datasets (https://developer.imdb.com/non-commercial-datasets/),
+# keep only TV episode ratings, split them into 1000 small files and publish them on this
+# repository's GitHub Pages site. The app reads the one file for the show you open:
+# https://<owner>.github.io/<repo>/imdb-ratings/v1/<IMDb number mod 1000>.json
+# Uses AUTO_UPDATE_TOKEN only to switch GitHub Pages on (source: GitHub Actions) the first time.
+
+on:
+  schedule:
+    - cron: "43 21 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: imdb-ratings-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build the ratings files
+    runs-on: ubuntu-latest
+    steps:
+      - name: Make sure GitHub Pages is on
+        env:
+          GH_TOKEN: ${{ secrets.AUTO_UPDATE_TOKEN }}
+        run: |
+          if build_type="$(gh api "repos/${GITHUB_REPOSITORY}/pages" --jq .build_type 2>/dev/null)"; then
+            if [[ "${build_type}" != "workflow" ]]; then
+              gh api -X PUT "repos/${GITHUB_REPOSITORY}/pages" -f build_type=workflow
+            fi
+          else
+            gh api -X POST "repos/${GITHUB_REPOSITORY}/pages" -f build_type=workflow
+          fi
+          echo "Pages: $(gh api "repos/${GITHUB_REPOSITORY}/pages" --jq '.html_url + " (" + .build_type + ")"')"
+
+      - uses: actions/checkout@v6
+        with:
+          sparse-checkout: .github/scripts
+          sparse-checkout-cone-mode: false
+
+      - name: Download IMDb datasets
+        run: |
+          for name in title.ratings title.episode; do
+            curl -fsSL --retry 4 --retry-delay 20 -o "${name}.tsv.gz" "https://datasets.imdbws.com/${name}.tsv.gz"
+          done
+          ls -l *.tsv.gz
+
+      - name: Build per-show rating files
+        run: |
+          mkdir -p site/imdb-ratings
+          touch site/.nojekyll
+          python3 .github/scripts/imdb-episode-ratings.py title.ratings.tsv.gz title.episode.tsv.gz site/imdb-ratings/v1 \
+            | tee -a "${GITHUB_STEP_SUMMARY}"
+          du -sh site
+
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+
+  deploy:
+    name: Publish to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4
