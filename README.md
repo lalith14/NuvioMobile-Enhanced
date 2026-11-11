@@ -17,24 +17,37 @@ Everything else is the same as the original fork.
 
 ## Screenshots
 
-**IMDb episode ratings**
+**Episode ratings: before and after**
 
-<img src="docs/fork-screenshots/imdb-episode-ratings.jpg" width="260" alt="Episode list with IMDb ratings">
+<table>
+  <tr>
+    <td align="center"><b>Before</b> (IMDb + TMDB)</td>
+    <td align="center"><b>After</b> (IMDb only, wide logo)</td>
+  </tr>
+  <tr>
+    <td><img src="docs/fork-screenshots/tmdb-episode-ratings-before.jpg" width="300" alt="Before: IMDb and TMDB ratings"></td>
+    <td><img src="docs/fork-screenshots/imdb-episode-ratings.jpg" width="300" alt="After: IMDb rating only"></td>
+  </tr>
+</table>
 
 **Streams page: sort, filters and best for this device**
 
 <table>
   <tr>
-    <td><img src="docs/fork-screenshots/streams-list.jpg" width="200" alt="Streams list with Play best for this device"></td>
-    <td><img src="docs/fork-screenshots/streams-filters.jpg" width="200" alt="Filters"></td>
-    <td><img src="docs/fork-screenshots/best-for-device-4k.jpg" width="200" alt="Best for this device: 4K"></td>
-    <td><img src="docs/fork-screenshots/best-for-device-1080p.jpg" width="200" alt="Best for this device: 1080p limit"></td>
-  </tr>
-  <tr>
     <td align="center">Streams list</td>
     <td align="center">Filters</td>
+  </tr>
+  <tr>
+    <td><img src="docs/fork-screenshots/streams-list.jpg" width="300" alt="Streams list with Play best for this device"></td>
+    <td><img src="docs/fork-screenshots/streams-filters.jpg" width="300" alt="Filters"></td>
+  </tr>
+  <tr>
     <td align="center">Best pick (4K)</td>
     <td align="center">Best pick (1080p limit)</td>
+  </tr>
+  <tr>
+    <td><img src="docs/fork-screenshots/best-for-device-4k.jpg" width="300" alt="Best for this device: 4K"></td>
+    <td><img src="docs/fork-screenshots/best-for-device-1080p.jpg" width="300" alt="Best for this device: 1080p limit"></td>
   </tr>
 </table>
 
