@@ -57,9 +57,9 @@ internal object OmdbEpisodeRatingsService {
     val hasApiKey: Boolean
         get() = OmdbSettingsRepository.effectiveApiKey().isNotBlank()
 
+    // IMDb ratings now come from this fork's daily IMDb data files, so no OMDb key is needed.
     fun shouldApply(meta: MetaDetails, settings: TmdbSettings): Boolean =
-        hasApiKey &&
-            (!settings.enabled || settings.useEpisodeRatings) &&
+        (!settings.enabled || settings.useEpisodeRatings) &&
             meta.type != "movie" &&
             meta.videos.any { video ->
                 (video.season != null && video.episode != null) ||
@@ -90,7 +90,18 @@ internal object OmdbEpisodeRatingsService {
             .mapNotNull { index -> targets[index] }
 
         val ratings = mutableMapOf<EpisodeTarget, Double>()
+        // Shows whose IMDb data file loaded: episodes there without an IMDb rating show none,
+        // instead of another site's rating under the IMDb logo.
+        val imdbAnswered = mutableSetOf<String>()
         targets.filterNotNull().groupBy { it.imdbId }.forEach { (imdbId, imdbTargets) ->
+            val datasetRatings = ImdbDatasetEpisodeRatings.ratingsFor(imdbId)
+            if (datasetRatings != null) {
+                imdbAnswered += imdbId
+                datasetRatings.forEach { (key, rating) ->
+                    ratings[EpisodeTarget(imdbId = imdbId, season = key.first, episode = key.second)] = rating
+                }
+                return@forEach
+            }
             val seasonRatings = fetchRatings(
                 imdbId = imdbId,
                 seasonNumbers = imdbTargets.map { it.season }.distinct(),
@@ -103,10 +114,16 @@ internal object OmdbEpisodeRatingsService {
                 ratings[EpisodeTarget(imdbId = imdbId, season = key.first, episode = key.second)] = rating
             }
         }
-        if (ratings.isEmpty()) return meta
+        if (ratings.isEmpty() && imdbAnswered.isEmpty()) return meta
         return meta.copy(
             videos = meta.videos.mapIndexed { index, video ->
-                targets[index]?.let(ratings::get)?.let { video.copy(imdbRating = it) } ?: video
+                val target = targets[index] ?: return@mapIndexed video
+                val rating = ratings[target]
+                when {
+                    rating != null -> video.copy(imdbRating = rating)
+                    target.imdbId in imdbAnswered -> video.copy(imdbRating = null, rating = null)
+                    else -> video
+                }
             },
         )
     }
