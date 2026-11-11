@@ -81,38 +81,19 @@ internal object OmdbEpisodeRatingsService {
         }
         if (targets.all { it == null }) return meta
 
-        val nowIso = Clock.System.now().toString()
-        val airedTargets = meta.videos.indices
-            .filter { index ->
-                val released = meta.videos[index].released?.takeIf { it.isNotBlank() }
-                released == null || released <= nowIso
-            }
-            .mapNotNull { index -> targets[index] }
-
         val ratings = mutableMapOf<EpisodeTarget, Double>()
         // Shows whose IMDb data file loaded: episodes there without an IMDb rating show none,
         // instead of another site's rating under the IMDb logo.
         val imdbAnswered = mutableSetOf<String>()
-        targets.filterNotNull().groupBy { it.imdbId }.forEach { (imdbId, imdbTargets) ->
+        targets.filterNotNull().map { it.imdbId }.distinct().forEach { imdbId ->
             val datasetRatings = ImdbDatasetEpisodeRatings.ratingsFor(imdbId)
             if (datasetRatings != null) {
                 imdbAnswered += imdbId
                 datasetRatings.forEach { (key, rating) ->
                     ratings[EpisodeTarget(imdbId = imdbId, season = key.first, episode = key.second)] = rating
                 }
-                return@forEach
             }
-            val seasonRatings = fetchRatings(
-                imdbId = imdbId,
-                seasonNumbers = imdbTargets.map { it.season }.distinct(),
-                airedEpisodesBySeason = airedTargets
-                    .filter { it.imdbId == imdbId }
-                    .groupBy({ it.season }, { it.episode })
-                    .mapValues { (_, episodes) -> episodes.toSet() },
-            )
-            seasonRatings.forEach { (key, rating) ->
-                ratings[EpisodeTarget(imdbId = imdbId, season = key.first, episode = key.second)] = rating
-            }
+            // No OMDb fallback in this fork: if the IMDb file can't be downloaded, try again later.
         }
         if (ratings.isEmpty() && imdbAnswered.isEmpty()) return meta
         return meta.copy(

@@ -4,7 +4,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CloudQueue
 import androidx.compose.material.icons.rounded.Forum
 import androidx.compose.material.icons.rounded.LiveTv
-import androidx.compose.material.icons.rounded.Theaters
 import androidx.compose.foundation.lazy.LazyListScope
 import com.nuvio.app.features.discord.DiscordRpcPlatform
 import nuvio.composeapp.generated.resources.Res
@@ -61,14 +60,7 @@ internal fun LazyListScope.integrationsContent(
                     isTablet = isTablet,
                     onClick = onMdbListClick,
                 )
-                SettingsGroupDivider(isTablet = isTablet)
-                SettingsNavigationRow(
-                    title = stringResource(Res.string.compose_settings_page_omdb),
-                    description = stringResource(Res.string.settings_integrations_omdb_description),
-                    icon = Icons.Rounded.Theaters,
-                    isTablet = isTablet,
-                    onClick = onOmdbClick,
-                )
+                // OMDb row hidden in this fork: episode ratings come from IMDb's own data, no key needed.
                 SettingsGroupDivider(isTablet = isTablet)
                 SettingsNavigationRow(
                     title = stringResource(Res.string.compose_settings_page_live_tv),
