@@ -23,10 +23,10 @@
           "version": "0.6.11",
           "buildVersion": "154",
           "date": "2026-11-10T10:41:45Z",
-          "localizedDescription": "What's new in this build:\n• Updated to Nuvio Enhanced 0.6.11-beta (luqmanfadlli's newest release)\n• The addon logo on stream cards follows your setting again when sorting\n• \"Play best for this device\" no longer picks streams that still need to download (⬇️ / ⏳)\n• App is about 50 MB smaller on your phone (leftover debugging data removed)\n\nInstall: sign it in Feather with the same certificate as your installed Nuvio and install it over the existing app (don't delete the old one).\n",
+          "localizedDescription": "What's new in this build:\n• Episode ratings are now the real IMDb ratings (updated daily), including new episodes. Episodes IMDb hasn't rated yet show no rating instead of a TMDB score.\n\nSame version number as before, so Feather won't show this as an update: install it again from the source to get these changes.\n\nInstall: sign it in Feather with the same certificate as your installed Nuvio and install it over the existing app (don't delete the old one).\n",
           "downloadURL": "https://github.com/lalith14/NuvioMobile-Enhanced/releases/download/imdb-0.6.11-154/Nuvio-IMDb-0.6.11-154.ipa",
-          "size": 68598478,
-          "sha256": "8a569257a5ea5699cc69dd6ba472444252b0814a9ab1ac158dcd1e0b84bae510",
+          "size": 68607256,
+          "sha256": "6fc14e313e46460d387f18312380837698ae77ed25233c88a8550b6ddb79f0b3",
           "minOSVersion": "16.1"
         },
         {
