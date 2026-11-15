@@ -8,9 +8,24 @@ Not affiliated with the Nuvio team or luqmanfadlli. Please don't report issues f
 
 ## What's changed
 
-- **IMDb-only episode ratings.** Episode cards show the IMDb rating (and your own rating) only. The TMDB badge is removed.
+**Ratings**
+- **Real IMDb episode ratings.** Episode ratings come straight from IMDb's own free daily data, refreshed every day. No API key or account needed.
+- **IMDb only.** Episode cards show the IMDb rating (and your own rating) only. The TMDB badge is removed, and episodes IMDb hasn't rated yet show no rating instead of a TMDB score.
 - **Bigger IMDb logo.** The IMDb logo on episodes is drawn wide (2:1), the same as the official Nuvio app, instead of squashed into a square.
-- **Sort, Filters and "Play best for this device" on the streams page.** Sort by quality, size or speed; filter by resolution, HDR, video, audio, source and file size; or tap once to play the stream that suits your screen, chip and connection best (it explains why it picked it).
+- **OMDb setting removed.** Ratings are automatic, so the OMDb API key setting is gone.
+
+**Streams page**
+- **Sort, Filters and "Play best for this device".** Sort by quality, size or speed; filter by resolution, HDR, video, audio, source and file size; or tap once to play the stream that suits your screen, chip and connection best (it explains why it picked it).
+- **Works sideways too.** With the phone turned sideways (or on iPad), the streams page has the same Sort, Filters and "Play best for this device", using the same saved choices. The buttons scroll away with the list, so there's room to pick a stream.
+- **Follows your background setting sideways.** With *Streams background* set to Normal, the sideways page is plain like the upright one, with no artwork and no glass panel. Only Cinematic gets the artwork and glass.
+
+**Look**
+- **No blurred strip at the top.** The frosted strip across the top of the show page, Streams and Settings pages is gone. The artwork runs sharp right up to the top of the screen, with just the back button over it.
+
+**Account**
+- **Nuvio account sign-in works.** Builds of this fork connect to Nuvio's account server, so signing in with a password or a link, signing out, and the Account page all work.
+
+**Updates**
 - **Automatic updates.** This fork regularly checks the original fork for a new release, merges it in with the changes above, builds the iOS app and publishes it.
 
 Everything else is the same as the original fork.
@@ -27,6 +42,19 @@ Everything else is the same as the original fork.
   <tr>
     <td><img src="docs/fork-screenshots/tmdb-episode-ratings-before.jpg" width="300" alt="Before: IMDb and TMDB ratings"></td>
     <td><img src="docs/fork-screenshots/imdb-episode-ratings.jpg" width="300" alt="After: IMDb rating only"></td>
+  </tr>
+</table>
+
+**Top of the page: before and after**
+
+<table>
+  <tr>
+    <td align="center"><b>Before</b> (blurred strip)</td>
+    <td align="center"><b>After</b> (artwork to the top)</td>
+  </tr>
+  <tr>
+    <td><img src="docs/fork-screenshots/top-blur-before.jpg" width="300" alt="Before: blurred strip across the top"></td>
+    <td><img src="docs/fork-screenshots/top-blur-after.jpg" width="300" alt="After: artwork sharp up to the top"></td>
   </tr>
 </table>
 
