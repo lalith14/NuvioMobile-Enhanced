@@ -20,6 +20,16 @@
       "category": "entertainment",
       "versions": [
         {
+          "version": "0.6.13",
+          "buildVersion": "156",
+          "date": "2026-11-15T07:10:01Z",
+          "localizedDescription": "What's new in this build:\n• Updated to Nuvio Enhanced 0.6.13-beta (luqmanfadlli's newest release)\n• Fixed Nuvio account sign-in. Signing in with your password or a link works again, and the Account page shows your account properly.\n\nInstall: sign it in Feather with the same certificate as your installed Nuvio and install it over the existing app (don't delete the old one).\n",
+          "downloadURL": "https://github.com/lalith14/NuvioMobile-Enhanced/releases/download/imdb-0.6.13-156/Nuvio-IMDb-0.6.13-156.ipa",
+          "size": 68806021,
+          "sha256": "ca1d9b3947b6115dc294753e54d437c549ea6dd009d901d16f5047a743de67b3",
+          "minOSVersion": "16.1"
+        },
+        {
           "version": "0.6.12",
           "buildVersion": "155",
           "date": "2026-11-13T02:52:03Z",
