@@ -214,26 +214,6 @@ internal fun TabletStreamsLayout(
                                 .fillMaxSize()
                                 .padding(16.dp),
                         ) {
-                            if ((resumePositionMs != null && resumePositionMs > 0L) || (resumeProgressFraction != null && resumeProgressFraction > 0f)) {
-                                ResumeBanner(
-                                    positionMs = resumePositionMs,
-                                    progressFraction = resumeProgressFraction,
-                                    modifier = Modifier.padding(bottom = 8.dp),
-                                )
-                            }
-
-                            ProviderFilterRow(
-                                groups = uiState.groups,
-                                selectedFilter = uiState.selectedFilter,
-                                onFilterSelected = { addonId -> StreamsRepository.selectFilter(addonId) },
-                                onRefresh = onRefresh,
-                            )
-
-                            ActiveScrapersStatusBlock(
-                                groups = uiState.groups,
-                                modifier = Modifier.padding(bottom = 4.dp),
-                            )
-
                             // Fork: sort, filters and "Play best for this device", same as upright.
                             val smartStreams = rememberSmartStreams(
                                 listState = rememberStreamSearchResult(uiState, searchQuery, showSearchField).uiState,
@@ -241,26 +221,55 @@ internal fun TabletStreamsLayout(
                                 debridEnabled = debridEnabled,
                                 isEpisode = isEpisode,
                             )
-                            SmartStreamControls(
-                                state = smartStreams,
-                                onPlay = { stream -> onStreamSelected(stream, resumePositionMs, resumeProgressFraction) },
-                                modifier = Modifier.padding(bottom = 8.dp),
-                            )
+                            // Fork: sideways there is little height, so these controls are the first row
+                            // of the stream list and scroll away with it instead of staying pinned.
+                            val listHeader: @Composable () -> Unit = {
+                                Column {
+                                    if ((resumePositionMs != null && resumePositionMs > 0L) || (resumeProgressFraction != null && resumeProgressFraction > 0f)) {
+                                        ResumeBanner(
+                                            positionMs = resumePositionMs,
+                                            progressFraction = resumeProgressFraction,
+                                            modifier = Modifier.padding(bottom = 8.dp),
+                                        )
+                                    }
 
-                            if (showSearchField) {
-                                StreamSearchField(
-                                    query = searchQuery,
-                                    onQueryChange = onSearchQueryChange,
-                                    modifier = Modifier.padding(bottom = 8.dp),
-                                )
+                                    ProviderFilterRow(
+                                        groups = uiState.groups,
+                                        selectedFilter = uiState.selectedFilter,
+                                        onFilterSelected = { addonId -> StreamsRepository.selectFilter(addonId) },
+                                        onRefresh = onRefresh,
+                                    )
+
+                                    ActiveScrapersStatusBlock(
+                                        groups = uiState.groups,
+                                        modifier = Modifier.padding(bottom = 4.dp),
+                                    )
+
+                                    SmartStreamControls(
+                                        state = smartStreams,
+                                        onPlay = { stream -> onStreamSelected(stream, resumePositionMs, resumeProgressFraction) },
+                                        modifier = Modifier.padding(bottom = 8.dp),
+                                    )
+
+                                    if (showSearchField) {
+                                        StreamSearchField(
+                                            query = searchQuery,
+                                            onQueryChange = onSearchQueryChange,
+                                            modifier = Modifier.padding(bottom = 8.dp),
+                                        )
+                                    }
+                                }
                             }
 
                             val listUiState = rememberStreamSearchResult(uiState, searchQuery, showSearchField)
+                            // Nothing to list: keep the controls on screen so the search or filters can be changed.
                             if (listUiState.isEmptyBecauseOfSearch) {
+                                listHeader()
                                 StreamSearchEmptyBlock(modifier = Modifier.weight(1f))
                                 return@Column
                             }
                             if (smartStreams.result?.emptyBecauseOfFilters == true) {
+                                listHeader()
                                 SmartFiltersEmptyBlock(modifier = Modifier.weight(1f))
                                 return@Column
                             }
@@ -276,6 +285,7 @@ internal fun TabletStreamsLayout(
                                 resumePositionMs = resumePositionMs,
                                 resumeProgressFraction = resumeProgressFraction,
                                 modifier = Modifier.weight(1f),
+                                header = listHeader,
                             )
                         }
                     }

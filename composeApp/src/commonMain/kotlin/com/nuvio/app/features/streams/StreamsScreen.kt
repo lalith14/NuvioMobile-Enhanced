@@ -789,6 +789,8 @@ internal fun StreamList(
     modifier: Modifier = Modifier,
     smartStreams: List<StreamItem>? = null,
     bestStream: StreamItem? = null,
+    // Fork: optional controls shown as the first row of the list, so they scroll away with it.
+    header: (@Composable () -> Unit)? = null,
 ) {
     val filteredGroups = uiState.filteredGroups
     val hasGroups = filteredGroups.isNotEmpty()
@@ -833,6 +835,9 @@ internal fun StreamList(
         ),
         verticalArrangement = Arrangement.spacedBy(0.dp),
     ) {
+        header?.let { listHeader ->
+            item(key = "list_header", contentType = "list_header") { listHeader() }
+        }
         sharedStream?.let { shared ->
             item(key = "shared_stream") {
                 Column {
