@@ -1,6 +1,6 @@
 name: Auto-update from upstream
 
-# Every hour: if luqmanfadlli/NuvioMobile-Enhanced has a newer release tag,
+# Four times an hour: if luqmanfadlli/NuvioMobile-Enhanced has a newer release tag,
 # merge it into "enhanced" (keeping our own changes) and start a Release IPA build.
 # "Publish IPA for Feather" then publishes the finished IPA.
 #
@@ -14,11 +14,13 @@ name: Auto-update from upstream
 
 on:
   schedule:
-    - cron: "17 * * * *"
+    # Four times an hour. GitHub delays and skips scheduled runs when it is busy (an hourly
+    # schedule only ran every 4-8 hours), so more tries means a new release is caught sooner.
+    - cron: "7,22,37,52 * * * *"
   workflow_dispatch:
     inputs:
       refresh_schedule:
-        description: Re-save the hourly schedule under the token owner's account (only this)
+        description: Re-save the schedule under the token owner's account (only this)
         type: boolean
         default: false
       self_test:
@@ -54,11 +56,11 @@ jobs:
           git config user.name "${login}"
           git config user.email "${id}+${login}@users.noreply.github.com"
           f=.github/workflows/auto-update-from-upstream.yml
-          # Move the minute between :17 and :18 so the schedule line itself changes.
-          if grep -q 'cron: "17 \* \* \* \*"' "${f}"; then minute=18; else minute=17; fi
-          sed -i -E "s/cron: \"[0-9]+ \* \* \* \*\"/cron: \"${minute} * * * *\"/" "${f}"
+          # Shift the minutes by one so the schedule line itself changes.
+          if grep -q 'cron: "7,22,37,52 \* \* \* \*"' "${f}"; then minutes=8,23,38,53; else minutes=7,22,37,52; fi
+          sed -i -E "s/cron: \"[0-9,]+ \* \* \* \*\"/cron: \"${minutes} * * * *\"/" "${f}"
           sed -i "s/^# Schedule owner: .*/# Schedule owner: ${login} (saved $(date -u +%Y-%m-%d))/" "${f}"
-          git commit -am "ci: save the hourly upstream check under ${login}"
+          git commit -am "ci: save the upstream check schedule under ${login}"
           git push origin HEAD:enhanced
           # Forks keep schedules off until the owner enables the workflow, so switch it off and on as them.
           gh api -X PUT "repos/${GITHUB_REPOSITORY}/actions/workflows/auto-update-from-upstream.yml/disable"
