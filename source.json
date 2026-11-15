@@ -23,10 +23,10 @@
           "version": "0.6.13",
           "buildVersion": "156",
           "date": "2026-11-15T07:10:01Z",
-          "localizedDescription": "What's new in this build:\n• Updated to Nuvio Enhanced 0.6.13-beta (luqmanfadlli's newest release)\n• Fixed Nuvio account sign-in. Signing in with your password or a link works again, and the Account page shows your account properly.\n\nInstall: sign it in Feather with the same certificate as your installed Nuvio and install it over the existing app (don't delete the old one).\n",
+          "localizedDescription": "What's new in this build:\n• Removed the blurred strip across the top of pages, so only the back button shows.\n• Streams page turned sideways now has Sort, Filters and \"Play best for this device\", and follows your background setting (no glass panel unless you choose Cinematic).\n\nSame version number as before, so Feather won't show this as an update: install it again from the source to get these changes.\n\nInstall: sign it in Feather with the same certificate as your installed Nuvio and install it over the existing app (don't delete the old one).\n",
           "downloadURL": "https://github.com/lalith14/NuvioMobile-Enhanced/releases/download/imdb-0.6.13-156/Nuvio-IMDb-0.6.13-156.ipa",
-          "size": 68806021,
-          "sha256": "ca1d9b3947b6115dc294753e54d437c549ea6dd009d901d16f5047a743de67b3",
+          "size": 68807081,
+          "sha256": "c9d08e68f1eab3944ab3b770af65ab5aa4c73299535d5f4eb83bc545aaa843d1",
           "minOSVersion": "16.1"
         },
         {
