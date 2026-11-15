@@ -80,6 +80,30 @@ jobs:
             printf 'CONTRIBUTIONS_URL=%s\n' "${CONTRIBUTIONS_URL}" >> local.properties
           fi
 
+      # Without these the app has no account server, so Nuvio sign-in, sign-out
+      # and "log in with link" all silently fail. Both values are public by
+      # design: the URL is Nuvio's official backend and the key is a Supabase
+      # *publishable* key (the same one shipped inside the official/upstream IPA).
+      # They are not private keys.
+      - name: Configure Nuvio account server
+        env:
+          OFFICIAL_SUPABASE_URL: https://api.nuvio.tv
+          OFFICIAL_SUPABASE_PUBLISHABLE_KEY: sb_publishable_1Clq8rlTVACkdcZuqr6_AD__xUUC_EN
+        run: |
+          touch local.properties
+          if ! grep -Eq '^NUVIO_SUPABASE_URL=.+' local.properties; then
+            printf '\nNUVIO_SUPABASE_URL=%s\n' "${OFFICIAL_SUPABASE_URL}" >> local.properties
+          fi
+          if ! grep -Eq '^NUVIO_SUPABASE_ANON_KEY=.+' local.properties; then
+            printf 'NUVIO_SUPABASE_ANON_KEY=%s\n' "${OFFICIAL_SUPABASE_PUBLISHABLE_KEY}" >> local.properties
+          fi
+          for property_name in NUVIO_SUPABASE_URL NUVIO_SUPABASE_ANON_KEY; do
+            if ! grep -Eq "^${property_name}=.+" local.properties; then
+              echo "::error::${property_name} is missing; the app would be unable to sign in." >&2
+              exit 1
+            fi
+          done
+
       - name: Constrain Gradle memory for the hosted runner
         run: |
           gradle_user_home="${GRADLE_USER_HOME:-${HOME}/.gradle}"
