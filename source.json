@@ -23,10 +23,10 @@
           "version": "0.6.13",
           "buildVersion": "156",
           "date": "2026-11-15T07:10:01Z",
-          "localizedDescription": "What's new in this build:\n• Removed the blurred strip across the top of pages, so only the back button shows.\n• Streams page turned sideways now has Sort, Filters and \"Play best for this device\", and follows your background setting (no glass panel unless you choose Cinematic).\n\nSame version number as before, so Feather won't show this as an update: install it again from the source to get these changes.\n\nInstall: sign it in Feather with the same certificate as your installed Nuvio and install it over the existing app (don't delete the old one).\n",
+          "localizedDescription": "What's new in this build:\n• The blurred strip at the top of pages is now really gone.\n• Streams page turned sideways: the buttons at the top now scroll away with the list, leaving more room for streams.\n\nSame version number as before, so Feather won't show this as an update: install it again from the source to get these changes.\n\nInstall: sign it in Feather with the same certificate as your installed Nuvio and install it over the existing app (don't delete the old one).\n",
           "downloadURL": "https://github.com/lalith14/NuvioMobile-Enhanced/releases/download/imdb-0.6.13-156/Nuvio-IMDb-0.6.13-156.ipa",
-          "size": 68807081,
-          "sha256": "c9d08e68f1eab3944ab3b770af65ab5aa4c73299535d5f4eb83bc545aaa843d1",
+          "size": 68810929,
+          "sha256": "6486c6b0d4608d07b8b2c413bb74238b965ebf7c93364fb72bd2cd0ffd37fb9b",
           "minOSVersion": "16.1"
         },
         {
