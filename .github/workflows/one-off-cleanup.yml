@@ -1,0 +1,45 @@
+name: One-off history cleanup
+
+# Temporary: moves the release tags onto the cleaned history and deletes old
+# feature branches. Removed again right after it has run once.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: enhanced
+          fetch-depth: 0
+
+      - name: Move release tags onto the cleaned history
+        run: |
+          set -euo pipefail
+          git config user.name lalith14
+          git config user.email lalith14@users.noreply.github.com
+          while read -r tag sha; do
+            git merge-base --is-ancestor "$sha" origin/enhanced || { echo "::error::$sha is not on enhanced"; exit 1; }
+            git push --force origin "$sha:refs/tags/$tag"
+          done <<'EOF'
+          imdb-0.6.10-153 978486500aa6743eb8dd4f49189f29e90627d56e
+          imdb-0.6.11-154 94eec26ab22fa236ecc8c767dc1515ea4502c55e
+          imdb-0.6.12-155 e8f2b41587e6a2c8bf06afce4f7123576dc4085e
+          imdb-0.6.13-156 13b82f9c12a0fa38f4e5e1bb54cda051e726b770
+          EOF
+
+      - name: Delete old feature branches
+        run: |
+          set -euo pipefail
+          for branch in feature/imdb-dataset-ratings feature/no-top-blur-landscape-streams feature/remove-omdb feature/stream-sort feature/top-blur-uikit-landscape-scroll; do
+            if git ls-remote --exit-code --heads origin "$branch" >/dev/null; then
+              git push origin --delete "$branch"
+            fi
+          done
+
+      - name: Show what is left
+        run: git ls-remote origin
