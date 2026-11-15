@@ -1487,6 +1487,11 @@ private struct DetailDestinationView: View {
             wrapper.route.hidesNavigationBar ? Visibility.hidden : Visibility.visible,
             for: .navigationBar
         )
+        // Fork: no frosted strip across the top of any page. The bar keeps its buttons
+        // (back, title) but loses its blurred background and the blur iOS adds along the
+        // top edge, so the page shows right up to the top of the screen.
+        .toolbarBackground(.hidden, for: .navigationBar)
+        .hidesTopEdgeBlur()
         .verticalBarDisabled(wrapper.route is PlayerRoute)
     }
 
@@ -1501,6 +1506,15 @@ private struct DetailDestinationView: View {
 }
 
 private extension View {
+    @ViewBuilder
+    func hidesTopEdgeBlur() -> some View {
+        if #available(iOS 26.0, *) {
+            scrollEdgeEffectHidden(true, for: .top)
+        } else {
+            self
+        }
+    }
+
     @ViewBuilder
     func verticalBarDisabled(_ disabled: Bool) -> some View {
         if #available(iOS 27.1, *), disabled {

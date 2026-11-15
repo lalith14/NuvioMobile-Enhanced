@@ -343,6 +343,7 @@ fun StreamsScreen(
                 },
                 onStreamLongPress = { stream -> streamActionsTarget = stream },
                 onRefresh = reloadStreams,
+                backgroundMode = streamDisplaySettings.backgroundMode,
             )
         } else {
             MobileStreamsLayout(
