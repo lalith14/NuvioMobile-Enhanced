@@ -22,12 +22,6 @@ Not affiliated with the Nuvio team or luqmanfadlli. Please don't report issues f
 **Look**
 - **No blurred strip at the top.** The frosted strip across the top of the show page, Streams and Settings pages is gone. The artwork runs sharp right up to the top of the screen, with just the back button over it.
 
-**Account**
-- **Nuvio account sign-in works.** Builds of this fork connect to Nuvio's account server, so signing in with a password or a link, signing out, and the Account page all work.
-
-**Updates**
-- **Automatic updates.** This fork regularly checks the original fork for a new release, merges it in with the changes above, builds the iOS app and publishes it.
-
 Everything else is the same as the original fork.
 
 ## Screenshots
