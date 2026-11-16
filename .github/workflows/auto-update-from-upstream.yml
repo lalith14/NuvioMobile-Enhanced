@@ -1,28 +1,19 @@
 name: Auto-update from upstream
 
-# Four times an hour: if luqmanfadlli/NuvioMobile-Enhanced has a newer release tag,
+# Run by hand (Actions > Auto-update from upstream > Run workflow). There is no automatic
+# schedule: GitHub only ran it every 4-8 hours, so it was switched off on 2026-11-16.
+#
+# If luqmanfadlli/NuvioMobile-Enhanced has a newer release tag,
 # merge it into "enhanced" (keeping our own changes) and start a Release IPA build.
 # "Publish IPA for Feather" then publishes the finished IPA.
 #
 # Needs the AUTO_UPDATE_TOKEN secret: a fine-grained token for this repository
 # with Contents, Workflows and Actions set to "Read and write". The built-in
 # token cannot push merges that touch workflow files, which upstream often changes.
-#
-# GitHub runs a schedule on behalf of whoever last changed it. Run this workflow once with
-# "refresh_schedule" ticked to re-save the schedule as the AUTO_UPDATE_TOKEN owner.
-# Schedule owner: lalith14 (saved 2026-11-10)
 
 on:
-  schedule:
-    # Four times an hour. GitHub delays and skips scheduled runs when it is busy (an hourly
-    # schedule only ran every 4-8 hours), so more tries means a new release is caught sooner.
-    - cron: "7,22,37,52 * * * *"
   workflow_dispatch:
     inputs:
-      refresh_schedule:
-        description: Re-save the schedule under the token owner's account (only this)
-        type: boolean
-        default: false
       self_test:
         description: Also test that the token can update workflow files and start builds
         type: boolean
@@ -36,40 +27,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  refresh-schedule:
-    name: Re-save the schedule under the token owner
-    if: inputs.refresh_schedule
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out enhanced
-        uses: actions/checkout@v6
-        with:
-          ref: enhanced
-          token: ${{ secrets.AUTO_UPDATE_TOKEN }}
-
-      - name: Commit the schedule as the token owner
-        env:
-          GH_TOKEN: ${{ secrets.AUTO_UPDATE_TOKEN }}
-        run: |
-          login="$(gh api user --jq .login)"
-          id="$(gh api user --jq .id)"
-          git config user.name "${login}"
-          git config user.email "${id}+${login}@users.noreply.github.com"
-          f=.github/workflows/auto-update-from-upstream.yml
-          # Shift the minutes by one so the schedule line itself changes.
-          if grep -q 'cron: "7,22,37,52 \* \* \* \*"' "${f}"; then minutes=8,23,38,53; else minutes=7,22,37,52; fi
-          sed -i -E "s/cron: \"[0-9,]+ \* \* \* \*\"/cron: \"${minutes} * * * *\"/" "${f}"
-          sed -i "s/^# Schedule owner: .*/# Schedule owner: ${login} (saved $(date -u +%Y-%m-%d))/" "${f}"
-          git commit -am "ci: save the upstream check schedule under ${login}"
-          git push origin HEAD:enhanced
-          # Forks keep schedules off until the owner enables the workflow, so switch it off and on as them.
-          gh api -X PUT "repos/${GITHUB_REPOSITORY}/actions/workflows/auto-update-from-upstream.yml/disable"
-          sleep 5
-          gh api -X PUT "repos/${GITHUB_REPOSITORY}/actions/workflows/auto-update-from-upstream.yml/enable"
-
   sync:
     name: Merge new upstream release and build
-    if: ${{ !inputs.refresh_schedule }}
     runs-on: ubuntu-latest
     env:
       UPSTREAM_URL: https://github.com/luqmanfadlli/NuvioMobile-Enhanced.git

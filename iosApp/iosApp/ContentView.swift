@@ -298,7 +298,7 @@ final class RootComposeViewController: UIViewController {
         NuvioNavigationBarPassthrough.setEnabled(enabled, on: navigationController)
     }
 
-    // Fork: no frosted strip across the top of any page. Clears the navigation bar's
+    // No frosted strip across the top of any page. Clears the navigation bar's
     // background on the bar and on this page's navigation item (SwiftUI's own setting
     // alone did not reach it), and on iOS 26+ hides the blur iOS draws along the top
     // edge of scrolling content. The back button and titles are untouched.
@@ -1540,7 +1540,7 @@ private struct DetailDestinationView: View {
             wrapper.route.hidesNavigationBar ? Visibility.hidden : Visibility.visible,
             for: .navigationBar
         )
-        // Fork: no frosted strip across the top of any page. The bar keeps its buttons
+        // No frosted strip across the top of any page. The bar keeps its buttons
         // (back, title) but loses its blurred background and the blur iOS adds along the
         // top edge, so the page shows right up to the top of the screen.
         .toolbarBackground(.hidden, for: .navigationBar)
