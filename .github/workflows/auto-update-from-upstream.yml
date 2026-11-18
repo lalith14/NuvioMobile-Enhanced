@@ -97,9 +97,11 @@ jobs:
         id: find
         run: |
           git fetch --no-tags "${UPSTREAM_URL}" '+refs/tags/*:refs/upstream-tags/*'
+          # Release tags look like 1.0.0, 0.6.13-beta or 1.1.0-beta.2. Betas sort just before
+          # their final release, so 1.1.0 beats 1.1.0-beta.2, which beats 1.1.0-beta.1.
           tag="$(git -c versionsort.suffix=-beta for-each-ref --sort=-v:refname \
             --format='%(refname:strip=2)' refs/upstream-tags \
-            | grep -E '^[0-9]+\.[0-9]+\.[0-9]+(-beta)?$' | head -n 1)"
+            | grep -E '^[0-9]+\.[0-9]+\.[0-9]+(-beta(\.[0-9]+)?)?$' | head -n 1)"
           if [[ -z "${tag}" ]]; then
             echo "::error::No release tags found upstream."
             exit 1
