@@ -1,30 +1,43 @@
 package com.nuvio.app.features.streams
 
 import com.nuvio.app.features.downloads.DownloadNetworkGuard
+import com.nuvio.app.features.player.PlaybackMemoryInfo
 
-/** What the screen and chip of this device can actually show and play smoothly. */
-data class SmartScreenInfo(
-    /** Screen size in real pixels, long side first. */
+internal data class SmartScreenInfo(
     val longSidePx: Int,
     val shortSidePx: Int,
-    val hdr: Boolean,
-    /** True when the chip decodes AV1 in hardware (newer iPhones and iPads). */
+    val hdrFormats: Set<SmartHdr>,
+    val hevcHardware: Boolean,
     val av1Hardware: Boolean,
-    /** A TV or monitor is connected (cable or screen mirroring). */
+    val decodes4k: Boolean,
     val externalDisplay: Boolean,
     val isTablet: Boolean,
-)
+) {
+    val hdr: Boolean
+        get() = hdrFormats.isNotEmpty()
+}
 
 internal expect fun readSmartScreenInfo(): SmartScreenInfo
 
-data class SmartDeviceProfile(
+internal data class SmartDeviceProfile(
     val screen: SmartScreenInfo,
     val onWifi: Boolean,
+    val memoryMb: Int,
 ) {
-    /**
-     * How many picture lines of a widescreen (16:9) video this screen can really show.
-     * A recent iPhone (2556 x 1179) shows about 1179 lines, so 4K looks the same as 1080p there.
-     */
+    val memoryTier: SmartMemoryTier
+        get() = when {
+            memoryMb < LOW_MEMORY_MB -> SmartMemoryTier.LOW
+            memoryMb < AMPLE_MEMORY_MB -> SmartMemoryTier.LIMITED
+            else -> SmartMemoryTier.AMPLE
+        }
+
+    val maxComfortableLines: Int
+        get() = when {
+            !screen.decodes4k -> 1080
+            memoryTier == SmartMemoryTier.LOW -> 1080
+            else -> 2160
+        }
+
     val videoLines: Int
         get() = if (screen.externalDisplay) {
             2160
@@ -32,23 +45,33 @@ data class SmartDeviceProfile(
             minOf(screen.shortSidePx, screen.longSidePx * 9 / 16).coerceAtLeast(480)
         }
 
-    val screenLabel: String
-        get() = buildString {
-            if (screen.hdr) append("HDR · ")
-            append("${screen.longSidePx} × ${screen.shortSidePx}")
-            if (screen.externalDisplay) append(" · TV connected")
+    val memoryLabel: String
+        get() {
+            val tenths = (memoryMb * 10 + 512) / 1024
+            return "${tenths / 10}.${tenths % 10} GB"
         }
 
-    val videoLabel: String
-        get() = if (screen.av1Hardware) "HEVC, H.264, AV1" else "HEVC, H.264 (no AV1)"
-
-    val connectionLabel: String
-        get() = if (onWifi) "Wi-Fi" else "Mobile data"
+    companion object {
+        const val LOW_MEMORY_MB = 3000
+        const val AMPLE_MEMORY_MB = 5500
+    }
 }
+
+internal enum class SmartMemoryTier { LOW, LIMITED, AMPLE }
 
 internal fun currentSmartDeviceProfile(): SmartDeviceProfile = SmartDeviceProfile(
     screen = runCatching { readSmartScreenInfo() }.getOrElse {
-        SmartScreenInfo(1920, 1080, hdr = false, av1Hardware = false, externalDisplay = false, isTablet = false)
+        SmartScreenInfo(
+            longSidePx = 1920,
+            shortSidePx = 1080,
+            hdrFormats = emptySet(),
+            hevcHardware = true,
+            av1Hardware = false,
+            decodes4k = false,
+            externalDisplay = false,
+            isTablet = false,
+        )
     },
     onWifi = runCatching { DownloadNetworkGuard.isOnWifi() }.getOrDefault(true),
+    memoryMb = runCatching { PlaybackMemoryInfo.deviceMemoryMb() }.getOrDefault(4096),
 )

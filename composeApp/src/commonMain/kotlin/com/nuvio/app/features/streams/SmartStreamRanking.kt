@@ -5,24 +5,40 @@ import kotlinx.coroutines.Dispatchers
 import kotlin.math.log2
 import kotlin.math.min
 
-data class SmartRankedStream(
+internal data class SmartRankedStream(
     val stream: StreamItem,
     val info: SmartStreamInfo,
     val score: Double,
-    /** Position in the original addon order, used to break ties. */
     val index: Int,
 )
 
-data class SmartPick(
-    val stream: StreamItem,
-    val info: SmartStreamInfo,
-    val reasons: List<String>,
+internal data class SmartAutoPlayRanking(
+    val ranked: List<SmartRankedStream>,
+    val goodEnough: Boolean,
 )
 
-data class SmartStreamsResult(
-    /** The streams state with filters applied (addon groups kept, for loading/empty handling). */
+internal sealed interface SmartReason {
+    data object Instant : SmartReason
+    data object NotInstant : SmartReason
+    data class SharpestForScreen(val resolution: String, val lines: Int) : SmartReason
+    data class SharpestWithinLimit(val resolution: String) : SmartReason
+    data class DecodedByChip(val codec: String) : SmartReason
+    data object H264Smooth : SmartReason
+    data class HdrShown(val format: String) : SmartReason
+    data class EnoughMemory(val memory: String) : SmartReason
+    data object KeptTo1080 : SmartReason
+    data class PreferredLanguage(val code: String) : SmartReason
+    data class SensibleSize(val size: String, val onWifi: Boolean) : SmartReason
+}
+
+internal data class SmartPick(
+    val stream: StreamItem,
+    val info: SmartStreamInfo,
+    val reasons: List<SmartReason>,
+)
+
+internal data class SmartStreamsResult(
     val listState: StreamsUiState,
-    /** One merged, sorted list when the sort isn't "Addon order"; null keeps the addon sections. */
     val sortedStreams: List<StreamItem>?,
     val best: SmartPick?,
     val shownCount: Int,
@@ -30,35 +46,34 @@ data class SmartStreamsResult(
     val emptyBecauseOfFilters: Boolean,
 )
 
-/**
- * What "best" means for this device right now: how many picture lines are worth having,
- * which bitrate range looks good without wasting data, and whether data is precious.
- */
 internal data class SmartTarget(
     val lines: Int,
     val explicitLimit: Int?,
     val sweetLowMbps: Double,
     val sweetHighMbps: Double,
     val saveData: Boolean,
+    val languages: List<String> = emptyList(),
 )
 
-object SmartStreamRanking {
+internal object SmartStreamRanking {
+    private const val BINGE_GROUP_BONUS = 25.0
+    private const val HEAVY_4K_MBPS = 40.0
 
-    /** All sorting work runs here, off the main thread and one job at a time. */
     val dispatcher: CoroutineDispatcher = Dispatchers.Default.limitedParallelism(1)
 
     fun runtimeSeconds(isEpisode: Boolean): Int = if (isEpisode) 45 * 60 else 120 * 60
 
     internal fun target(device: SmartDeviceProfile, settings: SmartStreamSettings): SmartTarget {
         val saveData = !device.onWifi && settings.mobileData == SmartMobileData.SAVE_DATA
-        val screenLines = device.videoLines
         val lines = when (settings.resolutionLimit) {
-            SmartResolutionLimit.AUTO -> if (saveData) min(screenLines, 1080) else screenLines
+            SmartResolutionLimit.AUTO -> {
+                val capable = if (device.memoryTier == SmartMemoryTier.AMPLE) device.maxComfortableLines else 1080
+                if (saveData) min(capable, 1080) else capable
+            }
             SmartResolutionLimit.P1080 -> 1080
             SmartResolutionLimit.P4K -> 2160
         }
         val explicitLimit = if (settings.resolutionLimit == SmartResolutionLimit.P1080) 1080 else null
-        // Bitrate (Mbps) where the picture already looks its best on this many lines.
         var low: Double
         var high: Double
         when {
@@ -71,7 +86,14 @@ object SmartStreamRanking {
             low = min(low, 2.5)
             high = min(high, 6.0)
         }
-        return SmartTarget(lines, explicitLimit, low, high, saveData)
+        return SmartTarget(
+            lines = lines,
+            explicitLimit = explicitLimit,
+            sweetLowMbps = low,
+            sweetHighMbps = high,
+            saveData = saveData,
+            languages = runCatching { SmartLanguageReader.preferredLanguages() }.getOrDefault(emptyList()),
+        )
     }
 
     internal fun score(
@@ -82,14 +104,12 @@ object SmartStreamRanking {
     ): Double {
         var score = 0.0
 
-        // 1. Instant streams start without waiting.
         score += when (info.instant) {
             SmartInstant.YES -> 40.0
             SmartInstant.UNKNOWN -> 15.0
             SmartInstant.NO -> 0.0
         }
 
-        // 2. Resolution only counts up to what the screen can show.
         val lines = info.resolution?.lines
         score += if (lines == null) {
             15.0
@@ -97,8 +117,8 @@ object SmartStreamRanking {
             30.0 * min(lines, target.lines).toDouble() / target.lines
         }
         if (target.explicitLimit != null && lines != null && lines > target.explicitLimit) score -= 25.0
+        if (lines != null && lines > device.maxComfortableLines) score -= 60.0
 
-        // 3. Bitrate: below the sweet spot looks blocky, above it only wastes data.
         val mbps = info.sizeBytes?.let { it * 8.0 / runtimeSeconds / 1_000_000.0 }
         score += when {
             mbps == null -> 4.0
@@ -110,26 +130,34 @@ object SmartStreamRanking {
             }
         }
 
-        // 4. Formats the chip plays smoothly.
         score += when (info.codec) {
             SmartCodec.AV1 -> when {
                 device.screen.av1Hardware -> 6.0
                 lines != null && lines >= 2160 -> -50.0
                 else -> -30.0
             }
-            SmartCodec.HEVC -> 6.0
+            SmartCodec.HEVC -> if (device.screen.hevcHardware) 6.0 else -30.0
             SmartCodec.H264 -> 4.0
             SmartCodec.OTHER -> -5.0
             null -> 0.0
         }
 
-        // 5. HDR only helps on a screen that shows it (worth less when saving data).
         if (info.hdr != null && device.screen.hdr) {
-            val bonus = 10.0 + 4.0 * info.hdr.rank
-            score += if (target.saveData) bonus / 2 else bonus
+            if (info.hdr in device.screen.hdrFormats) {
+                val bonus = 10.0 + 4.0 * info.hdr.rank
+                score += if (target.saveData) bonus / 2 else bonus
+            } else if (info.hdr == SmartHdr.DOLBY_VISION) {
+                score -= 10.0
+            } else {
+                score += 4.0
+            }
         }
 
-        // 6. Small extras: better source and audio.
+        if (device.memoryTier != SmartMemoryTier.AMPLE && lines != null && lines >= 2160) {
+            val heavy = info.source == SmartSource.REMUX || (mbps != null && mbps > HEAVY_4K_MBPS)
+            if (heavy) score -= 20.0
+        }
+
         score += when (info.source) {
             SmartSource.REMUX, SmartSource.BLURAY, SmartSource.WEBDL -> 6.0
             SmartSource.WEBRIP -> 3.0
@@ -141,6 +169,8 @@ object SmartStreamRanking {
             info.audio.isNotEmpty() -> 1.0
             else -> 0.0
         }
+
+        score += languageScore(info.languages, target.languages)
 
         if (info.isLowQuality) score -= 100.0
         return score
@@ -191,28 +221,79 @@ object SmartStreamRanking {
         )
     }
 
-    private fun reasons(info: SmartStreamInfo, device: SmartDeviceProfile, target: SmartTarget): List<String> = buildList {
+    internal fun languageScore(languages: SmartStreamLanguages, preferred: List<String>): Double {
+        val primary = preferred.firstOrNull() ?: return 0.0
+        val secondary = preferred.drop(1).toSet()
+        return when {
+            primary in languages.codes -> 30.0
+            languages.codes.any { it in secondary } -> 20.0
+            languages.multiAudio && languages.codes.isEmpty() -> 8.0
+            languages.codes.isNotEmpty() -> -25.0
+            else -> 0.0
+        }
+    }
+
+    private fun preferredMatch(languages: SmartStreamLanguages, preferred: List<String>): String? =
+        preferred.firstOrNull { it in languages.codes }
+
+    private fun reasons(info: SmartStreamInfo, device: SmartDeviceProfile, target: SmartTarget): List<SmartReason> = buildList {
+        preferredMatch(info.languages, target.languages)?.let { add(SmartReason.PreferredLanguage(it)) }
         when (info.instant) {
-            SmartInstant.YES -> add("Instant, starts with no waiting")
-            SmartInstant.NO -> add("Needs to load first (no instant stream found)")
+            SmartInstant.YES -> add(SmartReason.Instant)
+            SmartInstant.NO -> add(SmartReason.NotInstant)
             SmartInstant.UNKNOWN -> Unit
         }
         info.resolution?.let { resolution ->
             if (resolution.lines > target.lines) {
-                add("${resolution.label}, sharpest for this screen (about ${device.videoLines} lines)")
+                add(SmartReason.SharpestForScreen(resolution.label, device.videoLines))
             } else {
-                add("${resolution.label}, the sharpest within your limit")
+                add(SmartReason.SharpestWithinLimit(resolution.label))
             }
         }
         when (info.codec) {
-            SmartCodec.HEVC, SmartCodec.H264 -> add("${info.codec?.label}, played smoothly by the chip")
-            SmartCodec.AV1 -> if (device.screen.av1Hardware) add("AV1, decoded by your chip")
+            SmartCodec.HEVC -> if (device.screen.hevcHardware) add(SmartReason.DecodedByChip("HEVC"))
+            SmartCodec.H264 -> add(SmartReason.H264Smooth)
+            SmartCodec.AV1 -> if (device.screen.av1Hardware) add(SmartReason.DecodedByChip("AV1"))
             else -> Unit
         }
-        if (info.hdr != null && device.screen.hdr) add("${info.hdr.label}, and your screen shows HDR")
-        info.sizeBytes?.let { size ->
-            add("${formatSmartSize(size)}, sensible for ${if (device.onWifi) "Wi-Fi" else "mobile data"}")
+        if (info.hdr != null && info.hdr in device.screen.hdrFormats) add(SmartReason.HdrShown(info.hdr.label))
+        if (info.resolution != null && info.resolution.lines >= 2160 && device.memoryTier == SmartMemoryTier.AMPLE) {
+            add(SmartReason.EnoughMemory(device.memoryLabel))
         }
+        if (device.maxComfortableLines < 2160 || device.memoryTier != SmartMemoryTier.AMPLE) {
+            if (info.resolution != null && info.resolution.lines <= 1080) add(SmartReason.KeptTo1080)
+        }
+        info.sizeBytes?.let { size ->
+            add(SmartReason.SensibleSize(formatSmartSize(size), device.onWifi))
+        }
+    }
+
+    fun rankForAutoPlay(
+        streams: List<StreamItem>,
+        settings: SmartStreamSettings,
+        device: SmartDeviceProfile,
+        debridEnabled: Boolean,
+        isEpisode: Boolean,
+        preferredBingeGroup: String? = null,
+    ): SmartAutoPlayRanking {
+        val bingeGroup = preferredBingeGroup?.trim()?.takeIf { it.isNotEmpty() }
+        val runtime = runtimeSeconds(isEpisode)
+        val target = target(device, settings)
+        val ranked = streams
+            .filter { it.isSelectableForPlayback(debridEnabled) }
+            .mapIndexed { index, stream ->
+                val info = SmartStreamQuality.cached(stream)
+                val bingeBonus = if (bingeGroup != null && stream.behaviorHints.bingeGroup == bingeGroup) BINGE_GROUP_BONUS else 0.0
+                SmartRankedStream(stream, info, score(info, device, target, runtime) + bingeBonus, index)
+            }
+            .filter { matches(it.info, settings.filters.copy(hideLowQuality = true)) }
+            .sortedWith(compareByDescending<SmartRankedStream> { it.score }.thenBy { it.index })
+            .let { all -> all.filter { it.info.instant != SmartInstant.NO }.ifEmpty { all } }
+        val best = ranked.firstOrNull()
+        val goodEnough = best != null &&
+            best.info.instant == SmartInstant.YES &&
+            (best.info.resolution?.lines ?: 0) >= minOf(target.lines, device.maxComfortableLines)
+        return SmartAutoPlayRanking(ranked = ranked, goodEnough = goodEnough)
     }
 
     fun compute(
@@ -227,7 +308,6 @@ object SmartStreamRanking {
         val target = target(device, settings)
         fun infoOf(stream: StreamItem): SmartStreamInfo = SmartStreamQuality.cached(stream)
 
-        // Best for this device: across every addon, ignoring the user's filters.
         val candidates = allState.groups.flatMap { it.streams }
             .filter { it.isSelectableForPlayback(debridEnabled) }
             .mapIndexed { index, stream ->
@@ -238,7 +318,6 @@ object SmartStreamRanking {
         val top = decent.maxWithOrNull(compareBy<SmartRankedStream> { it.score }.thenByDescending { it.index })
         val best = top?.let { SmartPick(it.stream, it.info, reasons(it.info, device, target)) }
 
-        // The list: filters first, then the chosen order.
         val filters = settings.filters
         val filteredGroups = listState.groups.map { group ->
             group.copy(streams = group.streams.filter { matches(infoOf(it), filters) })

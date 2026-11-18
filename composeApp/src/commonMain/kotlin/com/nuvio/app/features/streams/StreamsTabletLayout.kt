@@ -82,8 +82,6 @@ internal fun TabletStreamsLayout(
     modifier: Modifier = Modifier,
     backgroundMode: StreamBackgroundMode = StreamBackgroundMode.Cinematic,
 ) {
-    // Fork: follow the "Streams background" setting like the upright layout does. "Normal" is a
-    // plain page with no artwork or glass; only "Cinematic" gets the artwork and the glass panel.
     val cinematic = backgroundMode == StreamBackgroundMode.Cinematic
     val streamsPanelBackdrop = rememberNuvioBackdrop()
     val tabletBackdrop = remember(background, poster) {
@@ -214,15 +212,12 @@ internal fun TabletStreamsLayout(
                                 .fillMaxSize()
                                 .padding(16.dp),
                         ) {
-                            // Fork: sort, filters and "Play best for this device", same as upright.
                             val smartStreams = rememberSmartStreams(
                                 listState = rememberStreamSearchResult(uiState, searchQuery, showSearchField).uiState,
                                 allState = uiState,
                                 debridEnabled = debridEnabled,
                                 isEpisode = isEpisode,
                             )
-                            // Fork: sideways there is little height, so these controls are the first row
-                            // of the stream list and scroll away with it instead of staying pinned.
                             val listHeader: @Composable () -> Unit = {
                                 Column {
                                     if ((resumePositionMs != null && resumePositionMs > 0L) || (resumeProgressFraction != null && resumeProgressFraction > 0f)) {
@@ -262,7 +257,6 @@ internal fun TabletStreamsLayout(
                             }
 
                             val listUiState = rememberStreamSearchResult(uiState, searchQuery, showSearchField)
-                            // Nothing to list: keep the controls on screen so the search or filters can be changed.
                             if (listUiState.isEmptyBecauseOfSearch) {
                                 listHeader()
                                 StreamSearchEmptyBlock(modifier = Modifier.weight(1f))

@@ -4,54 +4,53 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-enum class SmartSortMode(val label: String, val description: String) {
-    BEST_MATCH("Best match", "Best for this device first · recommended"),
-    HIGHEST_QUALITY("Highest quality", "4K first, then HDR, then 1080p"),
-    SMALLEST_FILE("Smallest file", "Starts faster and uses less data"),
-    LARGEST_FILE("Largest file", "Usually the highest bitrate"),
-    ADDON_ORDER("Addon order", "Grouped by addon, like before"),
+internal enum class SmartSortMode {
+    BEST_MATCH,
+    HIGHEST_QUALITY,
+    SMALLEST_FILE,
+    LARGEST_FILE,
+    ADDON_ORDER,
 }
 
-enum class SmartResolutionLimit(val label: String) {
-    AUTO("Auto"),
-    P1080("1080p"),
-    P4K("4K"),
+internal enum class SmartResolutionLimit {
+    AUTO,
+    P1080,
+    P4K,
 }
 
-enum class SmartMobileData(val label: String) {
-    SAVE_DATA("Save data"),
-    BEST_QUALITY("Best quality"),
+internal enum class SmartMobileData {
+    SAVE_DATA,
+    BEST_QUALITY,
 }
 
-enum class SmartHdrFilter(val label: String) {
+internal enum class SmartHdrFilter(val label: String) {
     DOLBY_VISION("Dolby Vision"),
     HDR10("HDR10 / HDR10+"),
     SDR("SDR"),
 }
 
-data class SmartStreamFilters(
+internal data class SmartStreamFilters(
     val resolutions: Set<SmartResolution> = emptySet(),
     val hdr: Set<SmartHdrFilter> = emptySet(),
     val codecs: Set<SmartCodec> = emptySet(),
     val audio: Set<SmartAudio> = emptySet(),
     val sources: Set<SmartSource> = emptySet(),
-    /** Largest file to show in GB, or null for any size. */
     val maxSizeGb: Int? = null,
     val instantOnly: Boolean = false,
     val hideLowQuality: Boolean = true,
 ) {
-    /** Number of filters the user turned on (hiding low quality is the default, so it doesn't count). */
     val activeCount: Int
         get() = resolutions.size + hdr.size + codecs.size + audio.size + sources.size +
             (if (maxSizeGb != null) 1 else 0) + (if (instantOnly) 1 else 0) + (if (!hideLowQuality) 1 else 0)
 }
 
-data class SmartStreamSettings(
+internal data class SmartStreamSettings(
     val sortMode: SmartSortMode = SmartSortMode.BEST_MATCH,
     val rememberChoices: Boolean = true,
     val filters: SmartStreamFilters = SmartStreamFilters(),
     val resolutionLimit: SmartResolutionLimit = SmartResolutionLimit.AUTO,
     val mobileData: SmartMobileData = SmartMobileData.SAVE_DATA,
+    val autoPlay: Boolean = false,
 )
 
 internal expect object SmartStreamSettingsStorage {
@@ -59,7 +58,7 @@ internal expect object SmartStreamSettingsStorage {
     fun save(value: String)
 }
 
-object SmartStreamSettingsRepository {
+internal object SmartStreamSettingsRepository {
     private val _state = MutableStateFlow(decode(runCatching { SmartStreamSettingsStorage.load() }.getOrNull()))
     val state: StateFlow<SmartStreamSettings> = _state.asStateFlow()
 
@@ -70,7 +69,6 @@ object SmartStreamSettingsRepository {
         runCatching { SmartStreamSettingsStorage.save(encode(next)) }
     }
 
-    /** Called when the streams screen closes: without "Use for every title", the next title starts fresh. */
     fun onStreamsScreenClosed() {
         val current = _state.value
         if (current.rememberChoices) return
@@ -86,6 +84,7 @@ object SmartStreamSettingsRepository {
             "remember=${if (settings.rememberChoices) 1 else 0}",
             "limit=${settings.resolutionLimit.name}",
             "mobile=${settings.mobileData.name}",
+            "auto=${if (settings.autoPlay) 1 else 0}",
             "res=${f.resolutions.joinToString(",") { it.name }}",
             "hdr=${f.hdr.joinToString(",") { it.name }}",
             "codec=${f.codecs.joinToString(",") { it.name }}",
@@ -108,6 +107,7 @@ object SmartStreamSettingsRepository {
             rememberChoices = map["remember"] != "0",
             resolutionLimit = enumOr(map["limit"], SmartResolutionLimit.AUTO),
             mobileData = enumOr(map["mobile"], SmartMobileData.SAVE_DATA),
+            autoPlay = map["auto"] == "1",
             filters = SmartStreamFilters(
                 resolutions = enumSet<SmartResolution>(map["res"]),
                 hdr = enumSet<SmartHdrFilter>(map["hdr"]),

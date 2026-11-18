@@ -1,12 +1,23 @@
 package com.nuvio.app.features.streams
 
-// This fork targets iOS; on Android the sort and filter choices last until the app closes.
-internal actual object SmartStreamSettingsStorage {
-    private var value: String? = null
+import android.content.Context
+import android.content.SharedPreferences
+import com.nuvio.app.core.storage.ProfileScopedKey
 
-    actual fun load(): String? = value
+internal actual object SmartStreamSettingsStorage {
+    private const val preferencesName = "nuvio_smart_stream_settings"
+    private const val settingsKey = "smart_stream_sort_filter_settings"
+
+    private var preferences: SharedPreferences? = null
+
+    fun initialize(context: Context) {
+        preferences = context.getSharedPreferences(preferencesName, Context.MODE_PRIVATE)
+        SmartStreamDeviceContext.context = context.applicationContext
+    }
+
+    actual fun load(): String? = preferences?.getString(ProfileScopedKey.of(settingsKey), null)
 
     actual fun save(value: String) {
-        this.value = value
+        preferences?.edit()?.putString(ProfileScopedKey.of(settingsKey), value)?.apply()
     }
 }

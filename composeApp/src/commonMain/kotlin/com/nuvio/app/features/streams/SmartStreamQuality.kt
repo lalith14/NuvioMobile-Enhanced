@@ -1,37 +1,36 @@
 package com.nuvio.app.features.streams
 
-// Reads what a stream is (resolution, HDR, codec, audio, source, size, instant) from everything
-// the app knows about it: the user's badge matches, the stream name/description/filename and the
-// structured fields some addons send. Used by "Sort", "Filters" and "Play best for this device".
+import kotlinx.atomicfu.locks.SynchronizedObject
+import kotlinx.atomicfu.locks.synchronized
 
-enum class SmartResolution(val lines: Int, val label: String) {
+internal enum class SmartResolution(val lines: Int, val label: String) {
     SD(480, "SD"),
     HD720(720, "720p"),
     FHD1080(1080, "1080p"),
     UHD4K(2160, "4K"),
 }
 
-enum class SmartHdr(val rank: Int, val label: String) {
+internal enum class SmartHdr(val rank: Int, val label: String) {
     HDR10(1, "HDR10"),
     HDR10_PLUS(2, "HDR10+"),
     DOLBY_VISION(3, "Dolby Vision"),
 }
 
-enum class SmartCodec(val label: String) {
+internal enum class SmartCodec(val label: String) {
     HEVC("HEVC"),
     H264("H.264"),
     AV1("AV1"),
     OTHER("Other"),
 }
 
-enum class SmartAudio(val label: String) {
+internal enum class SmartAudio(val label: String) {
     ATMOS("Atmos"),
     DOLBY_DIGITAL("DD+ / DD 5.1"),
     DTS_TRUEHD("DTS / TrueHD"),
     STEREO("Stereo"),
 }
 
-enum class SmartSource(val rank: Int, val label: String) {
+internal enum class SmartSource(val rank: Int, val label: String) {
     HDTV(1, "HDTV"),
     WEBRIP(2, "WEBRip"),
     WEBDL(3, "WEB-DL"),
@@ -39,9 +38,9 @@ enum class SmartSource(val rank: Int, val label: String) {
     REMUX(5, "Remux"),
 }
 
-enum class SmartInstant { YES, NO, UNKNOWN }
+internal enum class SmartInstant { YES, NO, UNKNOWN }
 
-data class SmartStreamInfo(
+internal data class SmartStreamInfo(
     val resolution: SmartResolution?,
     val hdr: SmartHdr?,
     val codec: SmartCodec?,
@@ -50,13 +49,14 @@ data class SmartStreamInfo(
     val sizeBytes: Long?,
     val instant: SmartInstant,
     val isLowQuality: Boolean,
+    val languages: SmartStreamLanguages = SmartStreamLanguages(emptySet(), multiAudio = false),
 ) {
-    /** Short line such as "1080p · HEVC · Dolby Vision · Instant · 4.2 GB". */
-    fun summary(): String = listOfNotNull(
+    fun summary(instantLabel: String?): String = listOfNotNull(
         resolution?.label,
         codec?.takeIf { it != SmartCodec.OTHER }?.label,
         hdr?.label,
-        if (instant == SmartInstant.YES) "Instant" else null,
+        instantLabel?.takeIf { instant == SmartInstant.YES },
+        languages.codes.takeIf { it.isNotEmpty() }?.joinToString("/") { it.uppercase() },
         sizeBytes?.let(::formatSmartSize),
     ).joinToString(" · ")
 }
@@ -71,7 +71,7 @@ internal fun formatSmartSize(bytes: Long): String {
     }
 }
 
-object SmartStreamQuality {
+internal object SmartStreamQuality {
     private const val B = "(?<![a-z0-9])"
     private const val E = "(?![a-z0-9])"
 
@@ -101,26 +101,26 @@ object SmartStreamQuality {
     private val webdl = Regex("${B}(web dl|webdl|web)$E")
     private val webrip = Regex("${B}(webrip|web rip)$E")
     private val hdtv = Regex("${B}(hdtv|pdtv|dsr)$E")
-    // Bare "ts"/"tc" are left out on purpose: ".ts" is also a normal video file extension.
     private val lowQuality = Regex("${B}(cam|camrip|hdcam|hdts|telesync|hdtc|telecine|scr|screener|dvdscr|r5)$E")
 
     private val instantMarkers = Regex("(\\+]|⚡|${B}(instant|cached)$E)")
-    // Debrid addons mark streams that still have to download with ⬇️ (Comet/TorBox) or ⏳ (MediaFusion, AIOStreams).
     private val notInstantMarkers = Regex("(⬇|⏳|${B}(download|uncached|not cached)$E)")
     private val sizePattern = Regex("(\\d+(?:[.,]\\d+)?)\\s?(tb|gb|gib|mb|mib)$E")
     private val separators = Regex("[._\\-\\[\\]()|/,:]+")
 
-    // Reading a stream is the slow part, so each stream is read once and remembered.
-    // Only called from SmartStreamRanking.dispatcher (one thread), so a plain map is safe.
     private const val CACHE_LIMIT = 3000
     private val cache = LinkedHashMap<String, SmartStreamInfo>()
 
+    private val cacheLock = SynchronizedObject()
+
     fun cached(stream: StreamItem): SmartStreamInfo {
         val key = cacheKey(stream)
-        cache[key]?.let { return it }
+        synchronized(cacheLock) { cache[key] }?.let { return it }
         val info = read(stream)
-        if (cache.size >= CACHE_LIMIT) cache.remove(cache.keys.first())
-        cache[key] = info
+        synchronized(cacheLock) {
+            if (cache.size >= CACHE_LIMIT) cache.remove(cache.keys.first())
+            cache[key] = info
+        }
         return info
     }
 
@@ -138,7 +138,6 @@ object SmartStreamQuality {
     }
 
     fun read(stream: StreamItem): SmartStreamInfo {
-        // The matcher may add one last entry that repeats all the others joined; skip only that repeat.
         val candidates = StreamBadgeMatcher.badgeMatchCandidates(stream).let { list ->
             if (list.size > 1 && list.last() == list.dropLast(1).joinToString(" ")) list.dropLast(1) else list
         }
@@ -146,7 +145,6 @@ object SmartStreamQuality {
             addAll(candidates)
             stream.badges.forEach { add(it.name) }
         }.joinToString(" ").lowercase()
-        // "WEB-DL" -> "web dl", "H.265" -> "h 265", "DD+5.1" stays readable as "dd+5 1".
         val text = raw.replace(separators, " ")
         val parsed = stream.clientResolve?.stream?.raw?.parsed
 
@@ -159,6 +157,7 @@ object SmartStreamQuality {
             sizeBytes = stream.behaviorHints.videoSize?.takeIf { it > 0 } ?: readSize(raw),
             instant = readInstant(stream, raw),
             isLowQuality = lowQuality.containsMatchIn(text) && !webdl.containsMatchIn(text) && !bluray.containsMatchIn(text),
+            languages = SmartLanguageReader.read(raw, text, parsed?.languages.orEmpty()),
         )
     }
 
@@ -234,11 +233,9 @@ object SmartStreamQuality {
         }
         if (notInstantMarkers.containsMatchIn(raw)) return SmartInstant.NO
         if (instantMarkers.containsMatchIn(raw)) return SmartInstant.YES
-        // A plain web link (not a torrent) plays straight away.
         if (!stream.isTorrentStream && stream.playableDirectUrl != null && !stream.shouldOpenExternally) {
             return SmartInstant.YES
         }
-        // A torrent that has to be fetched peer to peer is the slowest to start.
         if (stream.needsLocalDebridResolve && !stream.isAddonDebridCandidate) return SmartInstant.NO
         return SmartInstant.UNKNOWN
     }
