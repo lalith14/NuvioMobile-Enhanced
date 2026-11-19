@@ -23,10 +23,10 @@
           "version": "1.1.0-beta.2",
           "buildVersion": "159",
           "date": "2026-11-18T08:44:59Z",
-          "localizedDescription": "What's new in this build:\n• Play best for this device picks sensibly sized files for your screen again (around 7-10 GB for a 4K movie instead of 30+ GB).\n• Files that don't name a language now count as English, so dual-language files no longer jump ahead just for mentioning English.\n\nSame version number as before, so Feather won't show this as an update: install it again from the source to get these changes.\n\nInstall: sign it in Feather with the same certificate as your installed Nuvio and install it over the existing app (don't delete the old one).\n",
+          "localizedDescription": "What's new in this build:\n• Play best now prefers English-only files over dual-language ones (like EN/IT) when they're about as good.\n\nSame version number as before, so Feather won't show this as an update: install it again from the source to get these changes.\n\nInstall: sign it in Feather with the same certificate as your installed Nuvio and install it over the existing app (don't delete the old one).\n",
           "downloadURL": "https://github.com/lalith14/NuvioMobile-Enhanced/releases/download/imdb-1.1.0-beta.2-159/Nuvio-IMDb-1.1.0-beta.2-159.ipa",
-          "size": 70285781,
-          "sha256": "a98a0f508763631e1078bf15dd1dabb2eb64f9382ed24f803896eab4a83bc59d",
+          "size": 70284440,
+          "sha256": "e8dca539f5a4961d68290f11f5c748f391d601dd37287017b791b49a892c8ac7",
           "minOSVersion": "16.1"
         },
         {
