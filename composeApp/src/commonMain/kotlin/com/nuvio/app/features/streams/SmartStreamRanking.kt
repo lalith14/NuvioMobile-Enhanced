@@ -233,9 +233,12 @@ internal object SmartStreamRanking {
         // counts as English. Otherwise "Ita Eng" releases beat the plain English ones just for
         // naming the language.
         val codes = if (languages.codes.isEmpty() && !languages.multiAudio) setOf("en") else languages.codes
+        // Fork: a release that also carries languages the user didn't choose (e.g. EN/IT for an
+        // English user) loses a few points, so a single-language release wins when quality is similar.
+        val extra = if (codes.any { it !in preferred }) 8.0 else 0.0
         return when {
-            primary in codes -> 30.0
-            codes.any { it in secondary } -> 20.0
+            primary in codes -> 30.0 - extra
+            codes.any { it in secondary } -> 20.0 - extra
             languages.multiAudio && codes.isEmpty() -> 8.0
             codes.isNotEmpty() -> -25.0
             else -> 0.0
