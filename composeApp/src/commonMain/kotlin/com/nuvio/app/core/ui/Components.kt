@@ -35,6 +35,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.layout.LazyLayoutCacheWindow
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -106,6 +107,7 @@ internal fun Modifier.nuvioScreenSideBleed(): Modifier {
     }
 }
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun NuvioScreen(
     modifier: Modifier = Modifier,
@@ -113,6 +115,7 @@ fun NuvioScreen(
     topPadding: Dp? = null,
     listState: LazyListState = rememberLazyListState(),
     autoHidesNativeTabBar: Boolean = false,
+    cacheWindow: LazyLayoutCacheWindow? = null, // Fork: compose rows ahead (Home)
     content: LazyListScope.() -> Unit,
 ) {
     NativeTabBarScrollEffect(listState = listState, enabled = autoHidesNativeTabBar)
@@ -130,20 +133,34 @@ fun NuvioScreen(
         tokens.spacing.screenTop + statusBarTop + nuvioPlatformExtraTopPadding
     }
     CompositionLocalProvider(LocalNuvioScreenMetrics provides metrics) {
-        LazyColumn(
-            state = listState,
-            modifier = modifier
-                .fillMaxSize()
-                .background(screenBackground),
-            contentPadding = PaddingValues(
-                start = horizontalPadding,
-                top = resolvedTopPadding,
-                end = horizontalPadding,
-                bottom = nuvioSafeBottomPadding(tokens.spacing.screenBottom),
-            ).withVerticalBar(),
-            verticalArrangement = Arrangement.spacedBy(tokens.spacing.listGap),
-            content = content,
-        )
+        val listModifier = modifier
+            .fillMaxSize()
+            .background(screenBackground)
+        val listPadding = PaddingValues(
+            start = horizontalPadding,
+            top = resolvedTopPadding,
+            end = horizontalPadding,
+            bottom = nuvioSafeBottomPadding(tokens.spacing.screenBottom),
+        ).withVerticalBar()
+        val listArrangement = Arrangement.spacedBy(tokens.spacing.listGap)
+        if (cacheWindow != null) {
+            LazyColumn(
+                state = listState,
+                modifier = listModifier,
+                contentPadding = listPadding,
+                verticalArrangement = listArrangement,
+                cacheWindow = cacheWindow,
+                content = content,
+            )
+        } else {
+            LazyColumn(
+                state = listState,
+                modifier = listModifier,
+                contentPadding = listPadding,
+                verticalArrangement = listArrangement,
+                content = content,
+            )
+        }
     }
 }
 

@@ -460,6 +460,7 @@ fun MetaDetailsScreen(
         ) {
             when {
             displayedMeta == null && uiState.isLoading -> {
+                DetailsLoadingPlaceholder(type = type, id = id) // Fork: tapped poster instead of black
                 NuvioLoadingIndicator(
                     modifier = Modifier.align(Alignment.Center),
                 )

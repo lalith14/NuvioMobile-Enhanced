@@ -28,6 +28,8 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalGraphicsContext
 import androidx.compose.ui.unit.Dp
+import com.nuvio.app.core.ui.smooth.SmoothnessMode
+import com.nuvio.app.features.details.DetailsWarmup
 
 internal val LocalPosterClickAnchor = staticCompositionLocalOf<((PosterZoomAnchor) -> Unit)?> { null }
 
@@ -81,8 +83,18 @@ internal fun Modifier.posterCardClickable(
     val graphicsContext = LocalGraphicsContext.current
     val source = remember(graphicsContext, zoomImageUrl) { PosterLiftSource(graphicsContext) }
     val onPosterClickAnchor = LocalPosterClickAnchor.current
+    // Fork: the press state is read while drawing (below), so set it up first.
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressed by interactionSource.collectIsPressedAsState()
+    val canLongPress = onLongClick != null
     val posterModifier = Modifier
         .drawWithContent {
+            // Fork: in Smoothness mode, only record the hidden copy used by the long-press zoom
+            // while the card is pressed (a long press always starts as a press), not every frame.
+            if (SmoothnessMode.active && !pressed && !source.isLifted && !(canLongPress && onPosterClickAnchor != null)) {
+                drawContent()
+                return@drawWithContent
+            }
             source.layer.record { this@drawWithContent.drawContent() }
             if (!source.isLifted) drawLayer(source.layer)
         }
@@ -98,8 +110,6 @@ internal fun Modifier.posterCardClickable(
         .then(this)
     if (onClick == null && onLongClick == null) return posterModifier
     // Fork: a small spring "squish" while the card is pressed, so taps feel instant.
-    val interactionSource = remember { MutableInteractionSource() }
-    val pressed by interactionSource.collectIsPressedAsState()
     val pressScale by animateFloatAsState(
         targetValue = if (pressed) PosterPressedScale else 1f,
         animationSpec = spring(dampingRatio = 0.55f, stiffness = Spring.StiffnessMediumLow),
@@ -116,6 +126,7 @@ internal fun Modifier.posterCardClickable(
             indication = if (onPosterClickAnchor == null) LocalIndication.current else null,
             onClick = {
                 if (onClick != null) {
+                    DetailsWarmup.onPosterTapped(zoomImageUrl) // Fork
                     source.bounds?.let { bounds ->
                         onPosterClickAnchor?.invoke(
                             PosterZoomAnchor(bounds, zoomImageUrl, zoomCornerRadius).also { it.source = source },

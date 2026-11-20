@@ -1,6 +1,7 @@
 package com.nuvio.app.navigation
 
 import androidx.navigation3.runtime.NavBackStack
+import com.nuvio.app.features.details.DetailsWarmup
 import androidx.navigation3.runtime.NavKey
 import kotlin.reflect.KClass
 
@@ -44,6 +45,7 @@ internal class NuvioNavigator(
         }
 
         if (resolvedOptions.launchSingleTop && currentRoute == route) return
+        if (route is DetailRoute) DetailsWarmup.onNavigate(route) // Fork: start loading details now
         if (onExternalNavigate != null) {
             onExternalNavigate.invoke(route, resolvedOptions.launchSingleTop)
         } else {

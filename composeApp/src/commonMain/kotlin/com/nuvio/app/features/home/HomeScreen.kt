@@ -10,6 +10,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.layout.LazyLayoutCacheWindow
+import com.nuvio.app.core.ui.smooth.SmoothnessMode
+import com.nuvio.app.core.ui.smooth.SmoothnessReason
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -1024,6 +1027,9 @@ fun HomeScreen(
                 topPadding = if (showHeroSlot) 0.dp else null,
                 listState = homeListState,
                 autoHidesNativeTabBar = true,
+                // Fork: build the rows just below the screen ahead of time (posters included),
+                // except in Low Power Mode.
+                cacheWindow = HomeRowsCacheWindow.takeIf { SmoothnessMode.deviceReason != SmoothnessReason.LowPower },
             ) {
                 if (showHeroSlot) {
                     item(key = "home_hero", contentType = "hero") {
@@ -2135,3 +2141,6 @@ private fun List<ManagedAddon>.toHomeAddonSignals(): HomeAddonSignals =
         manifestsLoading = any { it.isRefreshing },
         manifestErrorMessage = firstEnabledManifestError(),
     )
+
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+private val HomeRowsCacheWindow = LazyLayoutCacheWindow(aheadFraction = 0.6f, behindFraction = 0.2f)
