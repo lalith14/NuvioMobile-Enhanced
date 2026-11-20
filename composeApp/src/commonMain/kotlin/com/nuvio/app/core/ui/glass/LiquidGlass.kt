@@ -1,5 +1,7 @@
 package com.nuvio.app.core.ui.glass
 
+import com.nuvio.app.core.ui.smooth.SmoothnessMode
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.runtime.Composable
@@ -64,7 +66,9 @@ object LiquidGlassSettings {
 
 fun isLiquidGlassAvailable(): Boolean = isRenderEffectSupported()
 
-fun isLiquidGlassSupported(): Boolean = LiquidGlassSettings.enabled && isLiquidGlassAvailable()
+// Fork: Smoothness mode turns live glass off without changing the saved choice.
+fun isLiquidGlassSupported(): Boolean =
+    LiquidGlassSettings.enabled && !SmoothnessMode.active && isLiquidGlassAvailable()
 
 fun isLiquidRefractionSupported(): Boolean = isRuntimeShaderSupported()
 
@@ -313,7 +317,7 @@ internal fun Modifier.liquidGlassBlur(
     radius: Dp,
     alphaProvider: () -> Float = { 1f },
 ): Modifier =
-    if (backdrop == null || !isLiquidGlassAvailable()) {
+    if (backdrop == null || !isLiquidGlassAvailable() || SmoothnessMode.active) {
         this
     } else {
         graphicsLayer { alpha = alphaProvider() }

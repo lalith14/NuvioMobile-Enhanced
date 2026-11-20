@@ -69,6 +69,7 @@ internal fun LazyListScope.layoutSettingsContent(
     onContinueWatchingClick: () -> Unit,
     onPosterCustomizationClick: () -> Unit,
 ) {
+    smoothnessSettingsContent(isTablet = isTablet) // Fork
     item {
         val dynamicArtworkBackgroundEnabled by ThemeSettingsRepository.dynamicArtworkBackgroundEnabled.collectAsStateWithLifecycle()
         val showCatalogAccentEnabled by ThemeSettingsRepository.showCatalogAccentEnabled.collectAsStateWithLifecycle()

@@ -1,5 +1,7 @@
 package com.nuvio.app.core.ui.background
 
+import com.nuvio.app.core.ui.smooth.SmoothnessMode
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -79,6 +81,8 @@ internal fun GlassUiPreset.style(): GlassUiStyle = when (this) {
 
 private const val DefaultBackgroundDim = 0.40f
 
+private const val SmoothGlassTintAlpha = 0.30f
+
 @Stable
 internal class AppBackgroundGeometry {
     var origin by mutableStateOf(Offset.Zero)
@@ -148,8 +152,10 @@ internal fun AppBackgroundHost(content: @Composable () -> Unit) {
     val original = remember(baseTokens, baseScheme, baseTypography) {
         OriginalTheme(baseTokens, baseScheme, baseTypography)
     }
-    val typography = remember(baseTypography, hasImage) {
-        if (hasImage) baseTypography.withTextShadow() else baseTypography
+    // Fork: Smoothness mode skips the blurred shadow drawn under every piece of text.
+    val smooth = SmoothnessMode.active
+    val typography = remember(baseTypography, hasImage, smooth) {
+        if (hasImage && !smooth) baseTypography.withTextShadow() else baseTypography
     }
 
     Box(
@@ -292,6 +298,20 @@ private fun ColorScheme.withAppBackground(hasImage: Boolean, glass: GlassUiStyle
 @Composable
 internal fun Modifier.appGlassBackdrop(shape: Shape): Modifier {
     val glass = LocalAppGlass.current?.takeIf { it.glassEnabled } ?: return this
+    if (SmoothnessMode.active) {
+        // Fork: Smoothness mode draws a flat frosted tint instead of tracking each card's
+        // position on every scroll frame to cut out its slice of the blurred background.
+        return this.drawWithContent {
+            val outline = shape.createOutline(size, layoutDirection, this)
+            drawOutline(outline = outline, color = Color.Black.copy(alpha = SmoothGlassTintAlpha))
+            drawContent()
+            drawOutline(
+                outline = outline,
+                color = Color.White.copy(alpha = glass.hairlineAlpha),
+                style = Stroke(width = 1.dp.toPx()),
+            )
+        }
+    }
     val origin = remember { mutableStateOf(Offset.Unspecified) }
     return this
         .onGloballyPositioned { origin.value = it.positionOnScreen() }
