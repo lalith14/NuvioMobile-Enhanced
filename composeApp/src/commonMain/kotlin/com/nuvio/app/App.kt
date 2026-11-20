@@ -83,7 +83,8 @@ internal fun AppEnvironment(
     if (!platformProvidesImageLoader) {
         setSingletonImageLoaderFactory { context ->
             ImageLoader.Builder(context)
-                .crossfade(true)
+                // Fork: shorter fade so posters don't shimmer on a fast first scroll (default 200 ms).
+                .crossfade(PosterCrossfadeMillis)
                 .diskCachePolicy(CachePolicy.ENABLED)
                 .memoryCachePolicy(CachePolicy.ENABLED)
                 .components {
@@ -121,3 +122,5 @@ internal fun AppEnvironment(
         }
     }
 }
+
+private const val PosterCrossfadeMillis = 110

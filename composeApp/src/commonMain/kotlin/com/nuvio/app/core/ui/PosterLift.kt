@@ -1,5 +1,10 @@
 package com.nuvio.app.core.ui
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.combinedClickable
@@ -15,6 +20,7 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.GraphicsContext
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.layer.drawLayer
@@ -91,9 +97,22 @@ internal fun Modifier.posterCardClickable(
         }
         .then(this)
     if (onClick == null && onLongClick == null) return posterModifier
-    return posterModifier
+    // Fork: a small spring "squish" while the card is pressed, so taps feel instant.
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressed by interactionSource.collectIsPressedAsState()
+    val pressScale by animateFloatAsState(
+        targetValue = if (pressed) PosterPressedScale else 1f,
+        animationSpec = spring(dampingRatio = 0.55f, stiffness = Spring.StiffnessMediumLow),
+        label = "posterPressScale",
+    )
+    return Modifier
+        .graphicsLayer {
+            scaleX = pressScale
+            scaleY = pressScale
+        }
+        .then(posterModifier)
         .combinedClickable(
-            interactionSource = null,
+            interactionSource = interactionSource,
             indication = if (onPosterClickAnchor == null) LocalIndication.current else null,
             onClick = {
                 if (onClick != null) {
@@ -131,3 +150,5 @@ internal fun DrawScope.drawLiftedPoster(source: PosterLiftSource) {
         drawLayer(layer)
     }
 }
+
+private const val PosterPressedScale = 0.96f
