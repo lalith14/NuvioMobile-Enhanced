@@ -4,10 +4,10 @@ import platform.Foundation.NSNotificationCenter
 import platform.Foundation.NSOperationQueue
 import platform.Foundation.NSProcessInfo
 import platform.Foundation.NSProcessInfoPowerStateDidChangeNotification
-import platform.Foundation.NSProcessInfoThermalStateCritical
 import platform.Foundation.NSProcessInfoThermalStateDidChangeNotification
-import platform.Foundation.NSProcessInfoThermalStateSerious
 import platform.Foundation.NSUserDefaults
+import platform.Foundation.lowPowerModeEnabled
+import platform.Foundation.thermalState
 import platform.UIKit.UIAccessibilityIsReduceTransparencyEnabled
 import platform.UIKit.UIAccessibilityReduceTransparencyStatusDidChangeNotification
 
@@ -46,7 +46,8 @@ internal actual object SmoothnessPlatform {
         val thermal = info.thermalState
         return when {
             info.lowPowerModeEnabled -> SmoothnessReason.LowPower
-            thermal == NSProcessInfoThermalStateSerious || thermal == NSProcessInfoThermalStateCritical -> SmoothnessReason.Hot
+            // NSProcessInfoThermalState: 0 nominal, 1 fair, 2 serious, 3 critical.
+            thermal.value >= 2L -> SmoothnessReason.Hot
             UIAccessibilityIsReduceTransparencyEnabled() -> SmoothnessReason.ReduceTransparency
             else -> null
         }
