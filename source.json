@@ -23,10 +23,10 @@
           "version": "1.1.0-beta.2",
           "buildVersion": "159",
           "date": "2026-11-18T08:44:59Z",
-          "localizedDescription": "What's new in this build:\n• New Smoothness mode (Settings > Layout > Performance) for smoother scrolling; it also turns on by itself in Low Power Mode or when your iPhone gets warm.\n\nSame version number as before, so Feather won't show this as an update: install it again from the source to get these changes.\n\nInstall: sign it in Feather with the same certificate as your installed Nuvio and install it over the existing app (don't delete the old one).\n",
+          "localizedDescription": "What's new in this build:\n• Posters now give a small squish when you press them, and images fade in faster while you scroll.\n\nSame version number as before, so Feather won't show this as an update: install it again from the source to get these changes.\n\nInstall: sign it in Feather with the same certificate as your installed Nuvio and install it over the existing app (don't delete the old one).\n",
           "downloadURL": "https://github.com/lalith14/NuvioMobile-Enhanced/releases/download/imdb-1.1.0-beta.2-159/Nuvio-IMDb-1.1.0-beta.2-159.ipa",
-          "size": 70299161,
-          "sha256": "38a34d29dee06565277dc0108dc5def287dcc77bf1adb69331af30416fafda2b",
+          "size": 70292044,
+          "sha256": "d9b1f61c29742f80692acbf90ea91a4ed24fa5a769c4bd82cb5ab0060882fb4f",
           "minOSVersion": "16.1"
         },
         {
