@@ -20,6 +20,16 @@
       "category": "entertainment",
       "versions": [
         {
+          "version": "1.1.0-beta.3",
+          "buildVersion": "160",
+          "date": "2026-11-22T10:06:06Z",
+          "localizedDescription": "What's new in this build:\n• Rebuilt with no visible changes\n\nInstall: sign it in Feather with the same certificate as your installed Nuvio and install it over the existing app (don't delete the old one).\n",
+          "downloadURL": "https://github.com/lalith14/NuvioMobile-Enhanced/releases/download/imdb-1.1.0-beta.3-160/Nuvio-IMDb-1.1.0-beta.3-160.ipa",
+          "size": 70662429,
+          "sha256": "80c2dbc54d703233ef41d41c55b2487f10c3f2f470dd33e09b3e0d8ed64bdf1d",
+          "minOSVersion": "16.1"
+        },
+        {
           "version": "1.1.0-beta.2",
           "buildVersion": "159",
           "date": "2026-11-18T08:44:59Z",
