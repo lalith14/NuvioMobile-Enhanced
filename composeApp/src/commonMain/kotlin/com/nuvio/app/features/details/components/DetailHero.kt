@@ -169,11 +169,11 @@ fun DetailHero(
                                 .background(MaterialTheme.colorScheme.surface),
                         )
                     }
-                    if (heroTrailerSourceUrl != null) {
+                    if (heroTrailerSourceUrl != null && !MiniPlayerController.isActive) {
                         HeroTrailerPlayerSurface(
                             sourceUrl = heroTrailerSourceUrl,
                             sourceAudioUrl = heroTrailerSourceAudioUrl,
-                            playWhenReady = heroTrailerPlayWhenReady() && !MiniPlayerController.isActive,
+                            playWhenReady = heroTrailerPlayWhenReady(),
                             muted = heroTrailerMuted,
                             modifier = Modifier
                                 .align(Alignment.TopCenter)
@@ -277,6 +277,7 @@ fun DetailHero(
                     } else {
                         Text(
                             text = meta.name,
+                            modifier = Modifier.fillMaxWidth(),
                             style = if (isTablet) MaterialTheme.typography.displaySmall else MaterialTheme.typography.displayLarge,
                             color = MaterialTheme.colorScheme.onBackground,
                             textAlign = TextAlign.Center,
