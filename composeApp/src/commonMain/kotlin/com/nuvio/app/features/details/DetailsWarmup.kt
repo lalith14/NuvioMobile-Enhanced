@@ -42,7 +42,6 @@ internal object DetailsWarmup {
     }
 
     fun onNavigate(route: DetailRoute) {
-        PosterOpenZoom.onNavigate(route)
         val key = key(route.type, route.id)
         val url = tappedPosterUrl?.takeIf { tappedAt?.elapsedNow()?.let { it < PressWindow } == true }
         tappedPosterUrl = null

@@ -26,12 +26,10 @@ import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalGraphicsContext
 import androidx.compose.ui.unit.Dp
 import com.nuvio.app.core.ui.smooth.SmoothnessMode
 import com.nuvio.app.features.details.DetailsWarmup
-import com.nuvio.app.features.details.PosterOpenZoom
 
 internal val LocalPosterClickAnchor = staticCompositionLocalOf<((PosterZoomAnchor) -> Unit)?> { null }
 
@@ -85,7 +83,6 @@ internal fun Modifier.posterCardClickable(
     val graphicsContext = LocalGraphicsContext.current
     val source = remember(graphicsContext, zoomImageUrl) { PosterLiftSource(graphicsContext) }
     val onPosterClickAnchor = LocalPosterClickAnchor.current
-    val density = LocalDensity.current // Fork: for the iOS zoom into the details page
     // Fork: the press state is read while drawing (below), so set it up first.
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
@@ -130,11 +127,6 @@ internal fun Modifier.posterCardClickable(
             onClick = {
                 if (onClick != null) {
                     DetailsWarmup.onPosterTapped(zoomImageUrl) // Fork
-                    PosterOpenZoom.onPosterTapped( // Fork: iOS zoom into the details page
-                        boundsPx = source.bounds,
-                        cornerRadiusPx = with(density) { zoomCornerRadius.toPx() },
-                        density = density.density,
-                    )
                     source.bounds?.let { bounds ->
                         onPosterClickAnchor?.invoke(
                             PosterZoomAnchor(bounds, zoomImageUrl, zoomCornerRadius).also { it.source = source },
