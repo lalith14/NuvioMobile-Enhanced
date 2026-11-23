@@ -23,10 +23,10 @@
           "version": "1.1.0-beta.3",
           "buildVersion": "160",
           "date": "2026-11-22T10:06:06Z",
-          "localizedDescription": "What's new in this build:\n• Tapping a poster now opens the title with a zoom from the poster, instead of a black page sliding in.\n\nSame version number as before, so Feather won't show this as an update: install it again from the source to get these changes.\n\nInstall: sign it in Feather with the same certificate as your installed Nuvio and install it over the existing app (don't delete the old one).\n",
+          "localizedDescription": "What's new in this build:\n• Removed the poster zoom when opening a title; titles open with the normal slide again.\n\nSame version number as before, so Feather won't show this as an update: install it again from the source to get these changes.\n\nInstall: sign it in Feather with the same certificate as your installed Nuvio and install it over the existing app (don't delete the old one).\n",
           "downloadURL": "https://github.com/lalith14/NuvioMobile-Enhanced/releases/download/imdb-1.1.0-beta.3-160/Nuvio-IMDb-1.1.0-beta.3-160.ipa",
-          "size": 70694852,
-          "sha256": "c9888217e4e4ca2c5e409fa84ab1f8411beb1039251718a8dccec30e9b72b3b1",
+          "size": 70662429,
+          "sha256": "e9e7ed201cdb94f0afb993c6ed793183a579a40604701756414788817b1362e1",
           "minOSVersion": "16.1"
         },
         {
