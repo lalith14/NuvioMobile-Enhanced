@@ -458,7 +458,9 @@ final class TabNavigationCoordinator: ObservableObject {
             AppKt.disposeRoute(route: route)
             return
         }
-        path.append(RouteWrapper(route: route))
+        let wrapper = RouteWrapper(route: route)
+        PosterZoomCenter.shared.prepare(wrapper, ownerID: path.last?.id, coordinator: self) // Fork: poster zoom
+        path.append(wrapper)
     }
 
     func pop() {
@@ -1443,6 +1445,7 @@ struct TabContentView: View {
     let usesTabletFloatingTabBar: Bool
     @ObservedObject var coordinator: TabNavigationCoordinator
     @ObservedObject var appCoordinator: AppNavigationCoordinator
+    @Namespace private var posterZoomNamespace // Fork: poster zoom
 
     var body: some View {
         NavigationStack(
@@ -1459,6 +1462,9 @@ struct TabContentView: View {
                 appCoordinator: appCoordinator
             )
             .ignoresSafeArea(.all)
+            .overlay { // Fork: poster zoom
+                PosterZoomSourceAnchors(ownerID: nil, coordinator: coordinator, namespace: posterZoomNamespace)
+            }
             .navigationTitle(appCoordinator.title(for: tab))
             .navigationBarHidden(true)
             .navigationDestination(for: RouteWrapper.self) { wrapper in
@@ -1468,9 +1474,11 @@ struct TabContentView: View {
                         usesNativeTabBar: usesNativeTabBar,
                         usesTabletFloatingTabBar: usesTabletFloatingTabBar,
                         coordinator: coordinator,
-                        appCoordinator: appCoordinator
+                        appCoordinator: appCoordinator,
+                        posterZoomNamespace: posterZoomNamespace
                     )
                     .id(wrapper.id)
+                    .posterZoomDestination(wrapperID: wrapper.id, namespace: posterZoomNamespace) // Fork
                 } else {
                     Color.clear
                 }
@@ -1524,6 +1532,7 @@ private struct DetailDestinationView: View {
     let usesTabletFloatingTabBar: Bool
     @ObservedObject var coordinator: TabNavigationCoordinator
     @ObservedObject var appCoordinator: AppNavigationCoordinator
+    let posterZoomNamespace: Namespace.ID // Fork: poster zoom
 
     private var usesComposeNavigationHeader: Bool {
         wrapper.route is DetailRoute || wrapper.route is StreamRoute
@@ -1554,6 +1563,9 @@ private struct DetailDestinationView: View {
             if showsReadabilityFade {
                 NativeToolbarReadabilityFade()
             }
+
+            // Fork: poster zoom (posters on this page that opened another page)
+            PosterZoomSourceAnchors(ownerID: wrapper.id, coordinator: coordinator, namespace: posterZoomNamespace)
         }
         .navigationTitle(wrapper.route.title ?? "")
         .navigationBarTitleDisplayMode(.inline)

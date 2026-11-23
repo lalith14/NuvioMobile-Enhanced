@@ -467,6 +467,7 @@ fun MetaDetailsScreen(
             }
 
             displayedMeta == null && uiState.errorMessage != null -> {
+                LaunchedEffect(type, id) { PosterOpenZoom.artworkReady(type, id) } // Fork
                 Column(
                     modifier = Modifier
                         .align(Alignment.Center)
@@ -1179,8 +1180,12 @@ fun MetaDetailsScreen(
                             !isHeroCollapsed.value
                     }
                     var heroBackdropPainter by remember(backdropUrl) { mutableStateOf<Painter?>(null) }
+                    if (backdropUrl.isNullOrBlank()) {
+                        LaunchedEffect(type, id) { PosterOpenZoom.artworkReady(type, id) } // Fork
+                    }
                     val onBackdropLoaded: (Painter, ImageBitmap?) -> Unit = { painter, _ ->
                         heroBackdropPainter = painter
+                        PosterOpenZoom.artworkReady(type, id) // Fork: iOS poster cover can fade
                     }
                     val onHeroTrailerReady: () -> Unit = {
                         if (!heroTrailerFinished) {
